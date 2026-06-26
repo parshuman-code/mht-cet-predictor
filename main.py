@@ -25,9 +25,9 @@ def predict_colleges(
     category: str,
     gender: str,
     cap_round: str = "Round 1",
-    min_percentile: float = 0.0,
-    page: int = 1,          # Naya parameter: Default page 1 hoga
-    limit: int = 20         # Naya parameter: Har page par 20 colleges
+    min_percentile: float = 0.0,  # Isko explicitly 0.0 default rakh rahe hain
+    page: int = 1,
+    limit: int = 20
 ):
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
@@ -36,6 +36,10 @@ def predict_colleges(
     category = category.upper()
     gender = gender.lower()
     
+    # SAFEST FIX: Agar kisi wajah se min_percentile None ya crash state mein ho
+    if min_percentile is None:
+        min_percentile = 0.0
+
     # Base Query data filter karne ke liye
     base_query = """
         FROM cutoffs 
@@ -53,12 +57,12 @@ def predict_colleges(
     if gender == "male":
         base_query += " AND NOT (seat_type LIKE 'L%')"
         
-    # 1. Pehle hum Total Count nikalenge taaki frontend ko pata chale kitne total pages banenge
+    # 1. Pehle Total Count nikalenge
     count_cursor = conn.cursor()
     count_cursor.execute(f"SELECT COUNT(DISTINCT choice_code) {base_query}", params)
     total_records = count_cursor.fetchone()[0]
     
-    # 2. Ab Pagination logic lagakar actual data nikalenge (OFFSET math formula)
+    # 2. Pagination logic (OFFSET math formula)
     offset = (page - 1) * limit
     
     data_query = f"""
@@ -78,7 +82,7 @@ def predict_colleges(
     
     return {
         "status": "success",
-        "total_count": total_records,  # Total kitne colleges mile
+        "total_count": total_records,
         "page": page,
         "limit": limit,
         "predictions": predictions
