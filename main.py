@@ -25,9 +25,9 @@ def predict_colleges(
     category: str,
     gender: str,
     cap_round: str = "Round 1",
-    min_percentile: float = 0.0,  # Isko explicitly 0.0 default rakh rahe hain
-    page: int = 1,
-    limit: int = 20
+    min_percentile: float = 0.0,
+    page: int = 1,          
+    limit: int = 20         
 ):
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
@@ -36,35 +36,33 @@ def predict_colleges(
     category = category.upper()
     gender = gender.lower()
     
-    # SAFEST FIX: Agar kisi wajah se min_percentile None ya crash state mein ho
     if min_percentile is None:
         min_percentile = 0.0
-
-    # Base Query data filter karne ke liye
+    
+    # Base Query structure without string concat bugs
     base_query = """
         FROM cutoffs 
         WHERE cap_round = ? 
         AND cutoff_percentile <= ?
         AND cutoff_percentile >= ?
+        AND seat_type LIKE ?
     """
-    params = [cap_round, percentile, min_percentile]
+    params = [cap_round, percentile, min_percentile, f"%{category}%"]
     
-    # Category Filter
-    base_query += " AND seat_type LIKE ?"
-    params.append(f"%{category}%")
-    
-    # Gender Filter
+    # Gender logic integration safely
     if gender == "male":
         base_query += " AND NOT (seat_type LIKE 'L%')"
         
-    # 1. Pehle Total Count nikalenge
+    # 1. Total records count calculation
     count_cursor = conn.cursor()
-    count_cursor.execute(f"SELECT COUNT(DISTINCT choice_code) {base_query}", params)
+    count_query = f"SELECT COUNT(DISTINCT choice_code) {base_query}"
+    count_cursor.execute(count_query, params)
     total_records = count_cursor.fetchone()[0]
     
-    # 2. Pagination logic (OFFSET math formula)
+    # 2. Offset math index calculation
     offset = (page - 1) * limit
     
+    # Clean injection of the query schema parameters
     data_query = f"""
         SELECT DISTINCT college_code, college_name, choice_code, branch_name, 
                         status, home_university, quota_allocation, seat_type, 
@@ -74,6 +72,7 @@ def predict_colleges(
         LIMIT ? OFFSET ?
     """
     
+    # Merging parameters arrays seamlessly
     cursor.execute(data_query, params + [limit, offset])
     rows = cursor.fetchall()
     conn.close()
