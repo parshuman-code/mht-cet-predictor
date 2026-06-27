@@ -20,6 +20,7 @@ import {
   ListOrdered,
   CheckCircle2,
   ArrowRight,
+  X
 } from "lucide-react";
 
 interface PredictionItem {
@@ -47,6 +48,11 @@ export default function Home() {
   const [capRound, setCapRound] = useState<string>("Round 1");
   const [minPercentile, setMinPercentile] = useState<string>("0");
   const [branchSearch, setBranchSearch] = useState<string>("");
+  const [collegeSearch, setCollegeSearch] = useState<string>(""); // New College Search State
+
+  // Sidebar Open/Close State (Responsive)
+  const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(true);
+  const [isHovered, setIsHovered] = useState<boolean>(false);
 
   // API Results & 20 Cards Control
   const [results, setResults] = useState<PredictionItem[]>([]);
@@ -64,6 +70,29 @@ export default function Home() {
 
   // Right scroll container reference
   const rightPanelRef = useRef<HTMLDivElement>(null);
+
+  // Reset function to clear everything when returning to home
+  const resetPredictorStates = () => {
+    setPercentile("");
+    setCategory("OPEN");
+    setGender("Male");
+    setCapRound("Round 1");
+    setMinPercentile("0");
+    setBranchSearch("");
+    setCollegeSearch(""); // Reset college search bar
+    setResults([]);
+    setTotalCount(0);
+    setCurrentPage(1);
+    setIsSidebarOpen(true);
+  };
+
+  // Watch viewMode transitions to perform reset
+  const handleViewModeChange = (mode: "landing" | "predictor") => {
+    if (mode === "landing") {
+      resetPredictorStates();
+    }
+    setViewMode(mode);
+  };
 
   // Intersection Observer for scroll synchronization (Landing Mode)
   useEffect(() => {
@@ -108,7 +137,7 @@ export default function Home() {
   }, [viewMode]);
 
   const scrollToSection = (sectionId: string) => {
-    setViewMode("landing");
+    handleViewModeChange("landing");
     setTimeout(() => {
       const element = document.getElementById(sectionId);
       if (element)
@@ -133,6 +162,9 @@ export default function Home() {
         setTotalCount(data.total_count);
         setCurrentPage(pageNumber);
 
+        // Auto minimize sidebar after successful prediction to show full results
+        setIsSidebarOpen(false);
+
         if (rightPanelRef.current) {
           rightPanelRef.current.scrollTo({ top: 0, behavior: "instant" });
         }
@@ -150,10 +182,16 @@ export default function Home() {
     fetchPredictions(1);
   };
 
+  // Multi-tier local client filtering for both Branch Name & College Name
   const filteredResults = results.filter((item) =>
-    item.branch_name.toLowerCase().includes(branchSearch.toLowerCase()),
+    item.branch_name.toLowerCase().includes(branchSearch.toLowerCase()) &&
+    item.college_name.toLowerCase().includes(collegeSearch.toLowerCase())
   );
+  
   const totalPages = Math.ceil(totalCount / itemsPerPage);
+
+  // Unified visual state for sidebar visibility
+  const isSidebarVisible = isSidebarOpen || isHovered;
 
   return (
     <div className="h-screen w-screen bg-slate-950 text-slate-100 font-sans overflow-hidden selection:bg-indigo-500/30 flex flex-col">
@@ -229,7 +267,7 @@ export default function Home() {
         <div className="flex items-center gap-3">
           <button
             onClick={() =>
-              setViewMode(viewMode === "predictor" ? "landing" : "predictor")
+              handleViewModeChange(viewMode === "predictor" ? "landing" : "predictor")
             }
             className="text-xs font-bold py-2.5 px-5 rounded-xl transition-all tracking-wide uppercase border bg-gradient-to-r from-indigo-500/10 to-cyan-500/10 border-indigo-500/20 text-indigo-300 hover:scale-105 backdrop-blur-sm"
           >
@@ -240,23 +278,19 @@ export default function Home() {
 
       {/* ================= MAIN LAYOUT CONTAINER ================= */}
       <div className="flex-1 flex flex-col pt-[73px] min-h-0 relative">
-        {/* VIEW 1: MODERN LANDING VIEW (WITH IMAGE BACKGROUND + FADE EFFECTS) */}
+        {/* VIEW 1: MODERN LANDING VIEW */}
         {viewMode === "landing" && (
           <div className="w-full flex-1 overflow-y-auto custom-scrollbar relative bg-slate-950">
-            {/* ====== BACKGROUND IMAGE CONTAINER (Deemed & Bottom Faded) ====== */}
+            {/* BACKGROUND IMAGE CONTAINER */}
             <div className="absolute top-0 left-0 w-full h-[110vh] pointer-events-none z-0 overflow-hidden">
-              {/* Actual Image Layer */}
               <div
                 className="w-full h-full bg-cover bg-top bg-no-repeat opacity-35"
                 style={{ backgroundImage: "url('/background.jpeg')" }}
               />
-              {/* Deemed Light Cover (Dark Overlay) */}
               <div className="absolute inset-0 bg-slate-950/40" />
-              {/* Smooth Bottom Faded Layer */}
               <div className="absolute bottom-0 left-0 w-full h-[50vh] bg-gradient-to-t from-slate-950 via-slate-950/80 to-transparent" />
             </div>
 
-            {/* Glowing Orbs on top of image for extra aesthetic */}
             <div
               className="absolute top-20 left-1/4 w-96 h-96 bg-indigo-600/10 rounded-full blur-[120px] pointer-events-none z-0"
               style={{ animation: "pulseGlow 6s infinite" }}
@@ -273,8 +307,7 @@ export default function Home() {
               className="max-w-5xl mx-auto text-center px-6 pt-24 pb-24 flex flex-col items-center min-h-[calc(100vh-73px)] justify-center relative z-10"
             >
               <div className="inline-flex items-center gap-2 bg-indigo-500/10 border border-indigo-500/30 text-indigo-400 px-4 py-1.5 rounded-full text-xs font-bold mb-8 shadow-inner animate-pulse">
-                <Sparkles className="h-3.5 w-3.5 text-amber-400" /> MHT-CET 2026
-                Updated Cutoffs Database Live
+                <Sparkles className="h-3.5 w-3.5 text-amber-400" /> MHT-CET 2026 Updated Cutoffs Database Live
               </div>
               <h1 className="text-5xl md:text-7xl font-black tracking-tight text-white mb-8 leading-[1.15] max-w-5xl">
                 Navigate Maharashtra Admissions With Absolute{" "}
@@ -283,12 +316,10 @@ export default function Home() {
                 </span>
               </h1>
               <p className="text-slate-400 text-base md:text-lg max-w-2xl mb-12 leading-relaxed">
-                Avoid manual PDF verification errors. Plug your core percentile
-                into our cloud processing engine to map ideal institutional
-                counseling seats instantly.
+                Avoid manual PDF verification errors. Plug your core percentile into our cloud processing engine to map ideal institutional counseling seats instantly.
               </p>
               <button
-                onClick={() => setViewMode("predictor")}
+                onClick={() => handleViewModeChange("predictor")}
                 className="group bg-gradient-to-r from-indigo-500 via-purple-500 to-cyan-500 hover:opacity-95 text-white font-extrabold py-4 px-10 rounded-2xl shadow-2xl shadow-indigo-500/20 transition-all duration-300 flex items-center gap-3 text-sm tracking-wider uppercase hover:scale-105"
               >
                 Start Predicting Colleges
@@ -296,7 +327,7 @@ export default function Home() {
               </button>
             </section>
 
-            {/* PURPOSE SECTION WITH ULTRA-CARDS */}
+            {/* PURPOSE SECTION */}
             <section
               id="purpose"
               ref={purposeRef}
@@ -311,9 +342,7 @@ export default function Home() {
                     Purpose Of Making This Tool
                   </h2>
                   <p className="text-slate-400 text-sm md:text-base mt-4 max-w-2xl mx-auto leading-relaxed">
-                    We extracted bulk allocation spreadsheets into optimized
-                    search segments so you don't lose crucial choice codes
-                    during critical CAP option form fillings.
+                    We extracted bulk allocation spreadsheets into optimized search segments so you don't lose crucial choice codes during critical CAP option form fillings.
                   </p>
                 </div>
 
@@ -354,7 +383,7 @@ export default function Home() {
               </div>
             </section>
 
-            {/* HOW TO USE: CRISP PROTOCOL STEPS BANNER */}
+            {/* HOW TO USE */}
             <section
               id="howToUse"
               ref={howToUseRef}
@@ -379,9 +408,7 @@ export default function Home() {
                   },
                   {
                     step: "02",
-                    icon: (
-                      <SlidersHorizontal className="h-4 w-4 text-purple-400" />
-                    ),
+                    icon: <SlidersHorizontal className="h-4 w-4 text-purple-400" />,
                     title: "Tune Matrix Filters",
                     desc: "Select matching category slots alongside specific gender options parameters.",
                   },
@@ -423,7 +450,7 @@ export default function Home() {
               </div>
             </section>
 
-            {/* ABOUT US CARD */}
+            {/* ABOUT US */}
             <section
               id="about"
               ref={aboutRef}
@@ -441,18 +468,13 @@ export default function Home() {
                     </h2>
                   </div>
                   <p className="text-slate-400 text-sm md:text-base leading-relaxed mb-6 text-center md:text-left">
-                    ClgPredict is a specialized analytical dashboard optimized
-                    exclusively for engineering branch seekers across
-                    Maharashtra. By running standalone fast indexing loops
-                    connected directly onto compressed database arrays, we
-                    ensure high delivery execution speeds—helping you plan
-                    perfect institutional priorities safely.
+                    ClgPredict is a specialized analytical dashboard optimized exclusively for engineering branch seekers across Maharashtra. By running standalone fast indexing loops connected directly onto compressed database arrays, we ensure high delivery execution speeds—helping you plan perfect institutional priorities safely.
                   </p>
                 </div>
               </div>
             </section>
 
-            {/* CONTACT TOUCHPOINTS LAYER */}
+            {/* CONTACT TOUCHPOINTS */}
             <section
               id="contact"
               ref={contactRef}
@@ -465,8 +487,7 @@ export default function Home() {
                 Get In Touch
               </h2>
               <p className="text-slate-500 text-xs md:text-sm mb-10 max-w-sm mx-auto leading-relaxed">
-                Facing technical latency or pipeline query mismatch bugs?
-                Contact our developer desk below.
+                Facing technical latency or pipeline query mismatch bugs? Contact our developer desk below.
               </p>
 
               <div className="space-y-4 text-left">
@@ -504,145 +525,190 @@ export default function Home() {
         {/* ================= VIEW 2: DASHBOARD PREDICTOR CORE ================= */}
         {viewMode === "predictor" && (
           <div className="flex-1 flex h-[calc(100vh-73px)] w-full overflow-hidden relative">
-            {/* LEFT SIDEBAR: PURE FIXED POSITION NO SCROLL LOOP */}
-            <aside className="w-80 h-full bg-slate-900 border-r border-slate-800 flex flex-col p-6 shrink-0 shadow-2xl overflow-y-auto custom-scrollbar">
-              <div className="flex items-center gap-2 mb-6 pb-4 border-b border-slate-800">
-                <SlidersHorizontal className="h-4 w-4 text-cyan-400" />
-                <span className="text-xs font-bold text-slate-300 uppercase tracking-wider">
-                  Matrix Parameters
-                </span>
-              </div>
-
-              <form onSubmit={handlePredictSubmit} className="space-y-5 flex-1">
-                <div>
-                  <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-2">
-                    My Percentile Score
-                  </label>
-                  <input
-                    type="number"
-                    step="any"
-                    min="0"
-                    max="100"
-                    required
-                    value={percentile}
-                    onChange={(e) => setPercentile(e.target.value)}
-                    placeholder="e.g. 95.84"
-                    className="w-full bg-slate-950 border border-slate-700 rounded-lg px-4 py-3 text-slate-100 focus:outline-none focus:border-indigo-500 text-sm transition-colors"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-2 flex items-center gap-1.5">
-                    <ArrowDownNarrowWide className="h-3.5 w-3.5 text-cyan-400" />{" "}
-                    Show Options Down To
-                  </label>
-                  <select
-                    value={minPercentile}
-                    onChange={(e) => setMinPercentile(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-700 rounded-lg px-4 py-3 text-slate-100 focus:outline-none focus:border-indigo-500 text-xs transition-colors"
-                  >
-                    <option value="0">0% Percentile (Show All)</option>
-                    <option value="40">40% Percentile Limit</option>
-                    <option value="60">60% Percentile Limit</option>
-                    <option value="75">75% Percentile Limit</option>
-                    <option value="85">85% Percentile Limit</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-2">
-                    Category Reservation
-                  </label>
-                  <select
-                    value={category}
-                    onChange={(e) => setCategory(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-700 rounded-lg px-4 py-3 text-slate-100 focus:outline-none focus:border-indigo-500 text-xs transition-colors"
-                  >
-                    <option value="OPEN">OPEN / General</option>
-                    <option value="OBC">OBC</option>
-                    <option value="SC">SC</option>
-                    <option value="ST">ST</option>
-                    <option value="EWS">EWS</option>
-                    <option value="TFWS">TFWS</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-2">
-                    Gender Mode
-                  </label>
-                  <div className="grid grid-cols-2 gap-2">
-                    {["Male", "Female"].map((g) => (
-                      <button
-                        key={g}
-                        type="button"
-                        onClick={() => setGender(g)}
-                        className={`py-2 px-3 rounded-lg text-xs font-semibold border transition-all ${
-                          gender === g
-                            ? "bg-indigo-600 border-indigo-500 text-white shadow-md"
-                            : "bg-slate-950 border-slate-700 text-slate-400 hover:text-slate-200"
-                        }`}
-                      >
-                        {g}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-2">
-                    Counseling CAP Round
-                  </label>
-                  <select
-                    value={capRound}
-                    onChange={(e) => setCapRound(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-700 rounded-lg px-4 py-3 text-slate-100 focus:outline-none focus:border-indigo-500 text-xs transition-colors"
-                  >
-                    <option value="Round 1">CAP Round 1</option>
-                    <option value="Round 2">CAP Round 2</option>
-                    <option value="Round 3">CAP Round 3</option>
-                  </select>
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="w-full mt-2 bg-gradient-to-r from-indigo-500 to-cyan-500 text-white font-bold py-3 px-4 rounded-lg transition-all shadow-lg flex items-center justify-center gap-2 disabled:opacity-50 text-xs uppercase tracking-wider"
-                >
-                  <Search className="h-4 w-4" />
-                  {loading ? "Querying..." : "Predict Options"}
-                </button>
-              </form>
-            </aside>
-
-            {/* RIGHT SIDE PANEL: ENTIRE CONTAINER SCROLLS EXCLUSIVELY */}
-            <main
-              ref={rightPanelRef}
-              className="flex-1 h-full flex flex-col bg-slate-950 min-w-0 overflow-y-auto custom-scrollbar"
+            
+            {/* COMMON DYNAMIC SIDEBAR TOGGLE BUTTON (Corner Fixed Hotspot) */}
+            <div 
+              onMouseEnter={() => setIsHovered(true)}
+              onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+              className="absolute left-0 top-0 h-[53px] w-[53px] z-50 flex items-center justify-center cursor-pointer group transition-all"
             >
-              {/* Sticky Controls */}
-              <header className="sticky top-0 z-20 px-8 py-4 border-b border-slate-800 bg-slate-950/95 backdrop-blur-md flex justify-between items-center gap-4 shrink-0">
-                <div className="flex items-center gap-4 w-full max-w-md">
-                  {results.length > 0 && (
-                    <div className="relative w-full">
-                      <BookOpen className="absolute left-3 top-2.5 h-3.5 w-3.5 text-slate-500" />
+              <div className={`h-9 w-9 rounded-lg border flex items-center justify-center transition-all shadow-md
+                ${isSidebarVisible 
+                  ? "bg-slate-950 border-slate-800 text-slate-400 hover:text-slate-100" 
+                  : "bg-slate-900 border-slate-800 text-cyan-400 hover:bg-slate-800"
+                }`}
+              >
+                {isSidebarVisible ? (
+                  <X className="h-4 w-4" />
+                ) : (
+                  <SlidersHorizontal className="h-4 w-4 animate-pulse" />
+                )}
+              </div>
+            </div>
+
+            {/* LEFT SIDEBAR ENGINE */}
+            <aside 
+              onMouseLeave={() => setIsHovered(false)}
+              className={`h-full bg-slate-900 border-r border-slate-800 flex flex-col pt-16 p-6 shrink-0 shadow-2xl overflow-y-auto custom-scrollbar transition-all duration-300 z-40
+                ${isSidebarVisible ? "w-80 translate-x-0" : "w-0 -translate-x-full p-0 border-r-0"} 
+                md:relative absolute left-0 top-0 bottom-0`}
+            >
+              {isSidebarVisible && (
+                <>
+                  <div className="flex items-center gap-2 mb-6 pb-4 border-b border-slate-800/60">
+                    <SlidersHorizontal className="h-4 w-4 text-cyan-400" />
+                    <span className="text-xs font-bold text-slate-300 uppercase tracking-wider">
+                      Matrix Parameters
+                    </span>
+                  </div>
+
+                  <form onSubmit={handlePredictSubmit} className="space-y-5 flex-1">
+                    <div>
+                      <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-2">
+                        My Percentile Score
+                      </label>
                       <input
-                        type="text"
-                        placeholder="Filter matrices by branch name keyword (e.g., Comp)..."
-                        value={branchSearch}
-                        onChange={(e) => setBranchSearch(e.target.value)}
-                        className="w-full bg-slate-900 border border-slate-800 rounded-lg pl-9 pr-4 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
+                        type="number"
+                        step="any"
+                        min="0"
+                        max="100"
+                        required
+                        value={percentile}
+                        onChange={(e) => setPercentile(e.target.value)}
+                        placeholder="e.g. 95.84"
+                        className="w-full bg-slate-950 border border-slate-700 rounded-lg px-4 py-3 text-slate-100 focus:outline-none focus:border-indigo-500 text-sm transition-colors"
                       />
                     </div>
+
+                    <div>
+                      <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-2 flex items-center gap-1.5">
+                        <ArrowDownNarrowWide className="h-3.5 w-3.5 text-cyan-400" />{" "}
+                        Show Options Down To
+                      </label>
+                      <select
+                        value={minPercentile}
+                        onChange={(e) => setMinPercentile(e.target.value)}
+                        className="w-full bg-slate-950 border border-slate-700 rounded-lg px-4 py-3 text-slate-100 focus:outline-none focus:border-indigo-500 text-xs transition-colors"
+                      >
+                        <option value="0">0% Percentile (Show All)</option>
+                        <option value="40">40% Percentile Limit</option>
+                        <option value="60">60% Percentile Limit</option>
+                        <option value="75">75% Percentile Limit</option>
+                        <option value="85">85% Percentile Limit</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-2">
+                        Category Reservation
+                      </label>
+                      <select
+                        value={category}
+                        onChange={(e) => setCategory(e.target.value)}
+                        className="w-full bg-slate-950 border border-slate-700 rounded-lg px-4 py-3 text-slate-100 focus:outline-none focus:border-indigo-500 text-xs transition-colors"
+                      >
+                        <option value="OPEN">OPEN / General</option>
+                        <option value="OBC">OBC</option>
+                        <option value="SC">SC</option>
+                        <option value="ST">ST</option>
+                        <option value="EWS">EWS</option>
+                        <option value="TFWS">TFWS</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-2">
+                        Gender Mode
+                      </label>
+                      <div className="grid grid-cols-2 gap-2">
+                        {["Male", "Female"].map((g) => (
+                          <button
+                            key={g}
+                            type="button"
+                            onClick={() => setGender(g)}
+                            className={`py-2 px-3 rounded-lg text-xs font-semibold border transition-all ${
+                              gender === g
+                                ? "bg-indigo-600 border-indigo-500 text-white shadow-md"
+                                : "bg-slate-950 border-slate-700 text-slate-400 hover:text-slate-200"
+                            }`}
+                          >
+                            {g}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-2">
+                        Counseling CAP Round
+                      </label>
+                      <select
+                        value={capRound}
+                        onChange={(e) => setCapRound(e.target.value)}
+                        className="w-full bg-slate-950 border border-slate-700 rounded-lg px-4 py-3 text-slate-100 focus:outline-none focus:border-indigo-500 text-xs transition-colors"
+                      >
+                        <option value="Round 1">CAP Round 1</option>
+                        <option value="Round 2">CAP Round 2</option>
+                        <option value="Round 3">CAP Round 3</option>
+                      </select>
+                    </div>
+
+                    <button
+                      type="submit"
+                      disabled={loading}
+                      className="w-full mt-2 bg-gradient-to-r from-indigo-500 to-cyan-500 text-white font-bold py-3 px-4 rounded-lg transition-all shadow-lg flex items-center justify-center gap-2 disabled:opacity-50 text-xs uppercase tracking-wider"
+                    >
+                      <Search className="h-4 w-4" />
+                      {loading ? "Querying..." : "Predict Options"}
+                    </button>
+                  </form>
+                </>
+              )}
+            </aside>
+
+            {/* RIGHT SIDE PANEL: ADJUSTABLE FULL WIDTH CARDS GRID */}
+            <main
+              ref={rightPanelRef}
+              className="flex-1 h-full flex flex-col bg-slate-950 min-w-0 overflow-y-auto custom-scrollbar transition-all duration-300"
+            >
+              {/* Sticky Controls Header (With Branch & College Name Filters) */}
+              <header className="sticky top-0 z-20 pl-16 pr-4 md:pr-8 py-4 border-b border-slate-800 bg-slate-950/95 backdrop-blur-md flex items-center justify-between gap-4 shrink-0 h-[53px]">
+                <div className="flex items-center gap-2.5 w-full max-w-2xl">
+                  {results.length > 0 && (
+                    <>
+                      {/* 1. College Name Search Input Bar */}
+                      <div className="relative flex-1">
+                        <Search className="absolute left-3 top-2.5 h-3.5 w-3.5 text-slate-500" />
+                        <input
+                          type="text"
+                          placeholder="Search College Name..."
+                          value={collegeSearch}
+                          onChange={(e) => setCollegeSearch(e.target.value)}
+                          className="w-full bg-slate-900 border border-slate-800 rounded-lg pl-9 pr-4 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
+                        />
+                      </div>
+                      
+                      {/* 2. Engineering Discipline / Branch Search Input Bar */}
+                      <div className="relative flex-1">
+                        <BookOpen className="absolute left-3 top-2.5 h-3.5 w-3.5 text-slate-500" />
+                        <input
+                          type="text"
+                          placeholder="Filter by branch name..."
+                          value={branchSearch}
+                          onChange={(e) => setBranchSearch(e.target.value)}
+                          className="w-full bg-slate-900 border border-slate-800 rounded-lg pl-9 pr-4 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
+                        />
+                      </div>
+                    </>
                   )}
                 </div>
-                <div className="text-xs bg-slate-800 border border-slate-700 px-3 py-1.5 rounded-md font-semibold text-indigo-400 whitespace-nowrap">
-                  Total Matches: {totalCount} Colleges
+                <div className="text-[10px] md:text-xs bg-slate-800 border border-slate-700 px-2.5 py-1.5 rounded-md font-semibold text-indigo-400 whitespace-nowrap">
+                  Total: {totalCount} Clgs
                 </div>
               </header>
 
               {/* Dynamic Grid Layout Area */}
-              <div className="flex-1 p-6 min-h-0">
+              <div className="flex-1 p-4 md:p-6 min-h-0">
                 {results.length === 0 ? (
                   <div className="h-full flex flex-col items-center justify-center text-center max-w-sm mx-auto py-20">
                     <GraduationCap className="h-12 w-12 text-slate-700 mb-3 stroke-[1.5]" />
@@ -650,25 +716,29 @@ export default function Home() {
                       No Target Data Loaded
                     </h3>
                     <p className="text-xs text-slate-500 mt-1">
-                      Configure parameters on the left sidebar form and execute
-                      query.
+                      Configure parameters on the left sidebar form and execute query.
                     </p>
                   </div>
                 ) : filteredResults.length === 0 ? (
                   <div className="h-full flex flex-col items-center justify-center text-center max-w-sm mx-auto py-20">
                     <Search className="h-10 w-10 text-slate-700 mb-2" />
                     <h3 className="text-xs font-bold text-slate-400">
-                      No branch match isolated
+                      No isolated target match found
                     </h3>
                   </div>
                 ) : (
                   <>
-                    {/* Fixed grid architecture */}
-                    <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 mb-6">
+                    {/* ADJUSTABLE FLEX GRID LAYOUT WITH NO EXTRA EMPTY SPACE */}
+                    <div className={`grid grid-cols-1 gap-4 mb-6 transition-all duration-300 w-full
+                      ${isSidebarVisible 
+                        ? "md:grid-cols-1 lg:grid-cols-2 xl:grid-cols-2" 
+                        : "md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+                      }`}
+                    >
                       {filteredResults.map((item, idx) => (
                         <div
                           key={idx}
-                          className="bg-slate-900 border border-slate-800 hover:border-slate-700 rounded-2xl p-5 transition-all flex flex-col justify-between shadow-md"
+                          className="bg-slate-900 border border-slate-800 hover:border-slate-700 rounded-2xl p-5 transition-all flex flex-col justify-between shadow-md h-full w-full"
                         >
                           <div>
                             <div className="flex justify-between items-center gap-2 mb-3">
@@ -698,7 +768,7 @@ export default function Home() {
                                 <div className="text-[9px] text-slate-500 font-bold uppercase">
                                   Engineering Discipline
                                 </div>
-                                <div className="font-semibold text-slate-300 truncate max-w-[200px]">
+                                <div className="font-semibold text-slate-300 truncate max-w-[180px]">
                                   {item.branch_name}
                                 </div>
                               </div>
