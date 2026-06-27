@@ -19,7 +19,7 @@ DB_PATH = os.path.join(os.path.dirname(__file__), "database.db")
 def home():
     return {"status": "running", "message": "MHT-CET Predictor Backend is Live!"}
 
-@app.get("/api/predict")
+@app.get("/predict")
 def predict_colleges(
     percentile: float,
     category: str,
