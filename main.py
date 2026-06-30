@@ -21,11 +21,12 @@ def home():
 
 @app.get("/predict")
 def predict_colleges(
-    percentile: float,
-    category: str,
-    gender: str,
+    percentile: float = -1.0,
+    category: str = "OPEN",
+    gender: str = "Male",
     cap_round: str = "Round 1",
     min_percentile: float = 0.0,
+    search: str = "",
     page: int = 1,
     limit: int = 20
 ):
@@ -33,70 +34,55 @@ def predict_colleges(
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
     
-    # Standardizing parameters
-    category_upper = f"%{category.upper()}%"
-    gender_lower = gender.lower()
+    offset = (page - 1) * limit
     
-    if min_percentile is None:
-        min_percentile = 0.0
-
-    # 1. PEHLE TOTAL COUNT NIKALENGE (Purely Hardcoded Structure for No 500 Crashes)
-    if gender_lower == "male":
-        count_query = """
-            SELECT COUNT(DISTINCT choice_code) FROM cutoffs 
-            WHERE cap_round = ? 
-            AND cutoff_percentile <= ? 
-            AND cutoff_percentile >= ? 
-            AND seat_type LIKE ? 
-            AND NOT (seat_type LIKE 'L%')
-        """
-        count_params = [cap_round, percentile, min_percentile, category_upper]
+    if percentile < 0:
+        # Default Search Mode (No Sidebar Filters Applied)
+        base_cond = "WHERE (college_name LIKE ? OR college_code LIKE ?)"
+        search_pattern = f"%{search.strip()}%"
+        count_params = [search_pattern, search_pattern]
     else:
-        count_query = """
-            SELECT COUNT(DISTINCT choice_code) FROM cutoffs 
-            WHERE cap_round = ? 
-            AND cutoff_percentile <= ? 
+        # Filtered Search Mode (Sidebar Filters Applied)
+        category_upper = f"%{category.upper()}%"
+        gender_lower = gender.lower()
+        if min_percentile is None:
+            min_percentile = 0.0
+            
+        base_cond = """
+            WHERE cutoff_percentile <= ? 
             AND cutoff_percentile >= ? 
             AND seat_type LIKE ?
         """
-        count_params = [cap_round, percentile, min_percentile, category_upper]
+        count_params = [percentile, min_percentile, category_upper]
+        
+        if cap_round and cap_round != "All Rounds":
+            base_cond += " AND cap_round = ?"
+            count_params.append(cap_round)
+            
+        if gender_lower == "male":
+            base_cond += " AND NOT (seat_type LIKE 'L%')"
+            
+        if search and search.strip():
+            base_cond += " AND branch_name LIKE ?"
+            search_pattern = f"%{search.strip()}%"
+            count_params.append(search_pattern)
 
+    # TOTAL COUNT QUERY
+    count_query = f"SELECT COUNT(DISTINCT choice_code) FROM cutoffs {base_cond}"
     cursor.execute(count_query, count_params)
     total_records = cursor.fetchone()[0]
     
-    # 2. OFFSET FOR PAGINATION
-    offset = (page - 1) * limit
-    
-    # 3. ACTUAL DATA FETCH QUERY
-    if gender_lower == "male":
-        data_query = """
-            SELECT DISTINCT college_code, college_name, choice_code, branch_name, 
-                            status, home_university, quota_allocation, seat_type, 
-                            stage, cutoff_rank, cutoff_percentile 
-            FROM cutoffs 
-            WHERE cap_round = ? 
-            AND cutoff_percentile <= ? 
-            AND cutoff_percentile >= ? 
-            AND seat_type LIKE ? 
-            AND NOT (seat_type LIKE 'L%')
-            ORDER BY cutoff_percentile DESC 
-            LIMIT ? OFFSET ?
-        """
-        data_params = [cap_round, percentile, min_percentile, category_upper, limit, offset]
-    else:
-        data_query = """
-            SELECT DISTINCT college_code, college_name, choice_code, branch_name, 
-                            status, home_university, quota_allocation, seat_type, 
-                            stage, cutoff_rank, cutoff_percentile 
-            FROM cutoffs 
-            WHERE cap_round = ? 
-            AND cutoff_percentile <= ? 
-            AND cutoff_percentile >= ? 
-            AND seat_type LIKE ? 
-            ORDER BY cutoff_percentile DESC 
-            LIMIT ? OFFSET ?
-        """
-        data_params = [cap_round, percentile, min_percentile, category_upper, limit, offset]
+    # ACTUAL DATA FETCH QUERY
+    data_query = f"""
+        SELECT DISTINCT college_code, college_name, choice_code, branch_name, 
+                        status, home_university, quota_allocation, seat_type, 
+                        stage, cutoff_rank, cutoff_percentile, cap_round 
+        FROM cutoffs 
+        {base_cond}
+        ORDER BY cutoff_percentile DESC 
+        LIMIT ? OFFSET ?
+    """
+    data_params = list(count_params) + [limit, offset]
         
     cursor.execute(data_query, data_params)
     rows = cursor.fetchall()
