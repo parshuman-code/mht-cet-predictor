@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pymongo import MongoClient
+import os
 
 app = FastAPI(title="MHT-CET Predictor API")
 
@@ -11,8 +12,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# MongoDB Connection
-MONGO_URI = "mongodb+srv://admin_prashant:Prashant123@cluster0.jursxle.mongodb.net/?appName=Cluster0"
+# Render ke Environment Variables se connection string uthayein
+MONGO_URI = os.environ.get("MONGO_URI", "mongodb+srv://admin_prashant:Prashant123@cluster0.jursxle.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0")
 client = MongoClient(MONGO_URI)
 db = client["MHTCET_DB"]
 collection = db["cutoffs"]
@@ -33,7 +34,7 @@ def predict_colleges(
     limit: int = 20
 ):
     query = {}
-    
+
     # Filter Logic
     if percentile >= 0:
         query["cutoff_percentile"] = {"$lte": percentile, "$gte": min_percentile}
@@ -43,15 +44,13 @@ def predict_colleges(
         if gender.lower() == "male":
             query["seat_type"] = {"$not": {"$regex": "^L"}}
     elif search.strip():
-        # Agar percentile nahi hai, toh name/code search karein
         regex = {"$regex": search.strip(), "$options": "i"}
-        query = {"$or": [{"college_name": regex}, {"college_code": regex}]}
+        query["$or"] = [{"college_name": regex}, {"college_code": {"$regex": search.strip()}}]
 
-    # MongoDB Fetch (Optimized)
+    # MongoDB Fetch
     total_records = collection.count_documents(query)
     skip_count = (page - 1) * limit
     
-    # Data fetch and sort
     cursor = collection.find(query, {"_id": 0}).sort("cutoff_percentile", -1).skip(skip_count).limit(limit)
     predictions = list(cursor)
     
