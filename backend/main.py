@@ -12,7 +12,7 @@ app.add_middleware(
 )
 
 # MongoDB Connection
-MONGO_URI = "mongodb+srv://admin_prashant:Prashant123@cluster0.rqw540o.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
+MONGO_URI = "mongodb+srv://admin_prashant:Prashant123@cluster0.jursxle.mongodb.net/?appName=Cluster0"
 client = MongoClient(MONGO_URI)
 db = client["MHTCET_DB"]
 collection = db["cutoffs"]
