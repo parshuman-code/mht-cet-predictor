@@ -97,6 +97,8 @@ export default function Home() {
       setGender("Male");
       setCapRound("Round 1");
       setMinPercentile("0");
+    } else if (viewMode === "predictor") {
+      fetchPredictions(1, "");
     }
   }, [viewMode]);
  
@@ -108,26 +110,35 @@ export default function Home() {
     }, 100);
   };
  
-  const fetchPredictions = async (pageNumber: number, searchQuery: string) => {
-    if (!percentile && !searchQuery.trim()) {
-      setResults([]);
-      setTotalCount(0);
-      setHasPredicted(false);
-      return;
-    }
+  const fetchPredictions = async (
+    pageNumber: number, 
+    searchQuery: string,
+    overridePercentile?: string,
+    overrideCategory?: string,
+    overrideGender?: string,
+    overrideCapRound?: string,
+    overrideMinPercentile?: string
+  ) => {
+    setLoading(true);
     
     if (searchQuery.trim() !== "") {
-      if (!percentile) {
+      const isPerc = overridePercentile !== undefined ? overridePercentile : percentile;
+      if (!isPerc) {
         setRecentCollegeSearches(prev => [searchQuery.trim(), ...prev.filter(s => s !== searchQuery.trim())].slice(0, 8));
       } else {
         setRecentBranchSearches(prev => [searchQuery.trim(), ...prev.filter(s => s !== searchQuery.trim())].slice(0, 8));
       }
     }
 
-    setLoading(true);
     try {
-      const percValue = percentile ? parseFloat(percentile) : -1;
-      const apiUrl = `${backendUrl}/predict?percentile=${percValue}&category=${category}&gender=${gender}&cap_round=${capRound}&min_percentile=${minPercentile}&page=${pageNumber}&limit=${itemsPerPage}&search=${encodeURIComponent(searchQuery)}`;
+      const pVal = overridePercentile !== undefined ? overridePercentile : percentile;
+      const cVal = overrideCategory !== undefined ? overrideCategory : category;
+      const gVal = overrideGender !== undefined ? overrideGender : gender;
+      const rVal = overrideCapRound !== undefined ? overrideCapRound : capRound;
+      const mVal = overrideMinPercentile !== undefined ? overrideMinPercentile : minPercentile;
+
+      const percValue = pVal ? parseFloat(pVal) : -1;
+      const apiUrl = `${backendUrl}/predict?percentile=${percValue}&category=${cVal}&gender=${gVal}&cap_round=${rVal}&min_percentile=${mVal}&page=${pageNumber}&limit=${itemsPerPage}&search=${encodeURIComponent(searchQuery)}`;
       const response = await fetch(apiUrl, { method: "GET", headers: { Accept: "application/json" } });
       if (!response.ok) throw new Error(`HTTP Error Status: ${response.status}`);
       const data = await response.json();
@@ -158,6 +169,17 @@ export default function Home() {
     setBranchSearch(""); // Reset search bar
     setLastSearchedQuery("");
     fetchPredictions(1, "");
+  };
+
+  const handleResetAll = () => {
+    setPercentile("");
+    setBranchSearch("");
+    setLastSearchedQuery("");
+    setCategory("OPEN");
+    setGender("Male");
+    setCapRound("Round 1");
+    setMinPercentile("0");
+    fetchPredictions(1, "", "", "OPEN", "Male", "Round 1", "0");
   };
  
   const filteredResults = results;
@@ -413,8 +435,16 @@ export default function Home() {
                       }}
                       onFocus={() => setShowRecent(true)}
                       onBlur={() => setTimeout(() => setShowRecent(false), 200)}
-                      className="w-full bg-slate-900 border border-slate-800 rounded-lg pl-9 pr-14 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
+                      className="w-full bg-slate-900 border border-slate-800 rounded-lg pl-9 pr-24 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
                     />
+                    <button 
+                      onClick={() => {
+                        handleResetAll();
+                      }}
+                      className="absolute right-12 top-1 bottom-1 px-3 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded text-[10px] font-bold transition-colors border border-slate-700"
+                    >
+                      ALL
+                    </button>
                     <button 
                       onClick={() => {
                         handleSearchSubmit(branchSearch);
