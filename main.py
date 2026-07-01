@@ -38,26 +38,69 @@ def predict_colleges(
     # Filter Logic
     if percentile >= 0:
         query["cutoff_percentile"] = {"$lte": percentile, "$gte": min_percentile}
-        query["seat_type"] = {"$regex": category, "$options": "i"}
+        
+        category_upper = category.upper()
+        seat_type_list = []
+        if category_upper == "OPEN":
+            seat_type_list = ['GOPENH', 'GOPENO', 'GOPENS', 'LOPENH', 'LOPENO', 'LOPENS']
+        elif category_upper == "OBC":
+            seat_type_list = ['GOBCH', 'GOBCO', 'GOBCS', 'LOBCH', 'LOBCO', 'LOBCS']
+        elif category_upper == "SC":
+            seat_type_list = ['GSCH', 'GSCO', 'GSCS', 'LSCH', 'LSCO', 'LSCS']
+        elif category_upper == "ST":
+            seat_type_list = ['GSTH', 'GSTO', 'GSTS', 'LSTH', 'LSTO', 'LSTS']
+        elif category_upper == "EWS":
+            seat_type_list = ['EWS']
+        elif category_upper == "TFWS":
+            seat_type_list = ['TFWS']
+            
+        if seat_type_list:
+            if gender.lower() == "male":
+                seat_type_list = [s for s in seat_type_list if not s.startswith("L")]
+            query["seat_type"] = {"$in": seat_type_list}
+        else:
+            query["seat_type"] = {"$regex": category, "$options": "i"}
+            if gender.lower() == "male":
+                query["seat_type"] = {"$not": {"$regex": "^L"}}
+
         if cap_round and cap_round != "All Rounds":
             query["cap_round"] = cap_round
-        if gender.lower() == "male":
-            query["seat_type"] = {"$not": {"$regex": "^L"}}
     elif search.strip():
         regex = {"$regex": search.strip(), "$options": "i"}
         query["$or"] = [{"college_name": regex}, {"college_code": {"$regex": search.strip()}}]
 
-    # MongoDB Fetch
-    total_records = collection.count_documents(query)
-    skip_count = (page - 1) * limit
-    
-    cursor = collection.find(query, {"_id": 0}).sort("cutoff_percentile", -1).skip(skip_count).limit(limit)
-    predictions = list(cursor)
-    
-    return {
-        "status": "success",
-        "total_count": total_records,
-        "page": page,
-        "limit": limit,
-        "predictions": predictions
-    }
+    try:
+        # MongoDB Fetch
+        if not query:
+            total_records = collection.estimated_document_count()
+        else:
+            total_records = collection.count_documents(query)
+            
+        skip_count = (page - 1) * limit
+        
+        cursor = collection.find(query, {"_id": 0}).sort("cutoff_percentile", -1).skip(skip_count).limit(limit)
+        predictions = list(cursor)
+        
+        import math
+        # Clean up NaN values which cause json.dumps to crash
+        for p in predictions:
+            for k, v in p.items():
+                if isinstance(v, float) and math.isnan(v):
+                    p[k] = None
+        
+        return {
+            "status": "success",
+            "total_count": total_records,
+            "page": page,
+            "limit": limit,
+            "predictions": predictions
+        }
+    except Exception as e:
+        return {
+            "status": "error",
+            "message": str(e),
+            "total_count": 0,
+            "page": page,
+            "limit": limit,
+            "predictions": []
+        }
