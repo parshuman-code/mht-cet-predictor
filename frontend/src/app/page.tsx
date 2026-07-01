@@ -26,8 +26,11 @@ export default function Home() {
   const [capRound, setCapRound] = useState<string>("Round 1");
   const [minPercentile, setMinPercentile] = useState<string>("0");
   const [branchSearch, setBranchSearch] = useState<string>("");
-  const [debouncedSearch, setDebouncedSearch] = useState<string>("");
- 
+  const [lastSearchedQuery, setLastSearchedQuery] = useState<string>("");
+  const [recentCollegeSearches, setRecentCollegeSearches] = useState<string[]>([]);
+  const [recentBranchSearches, setRecentBranchSearches] = useState<string[]>([]);
+  const [showRecent, setShowRecent] = useState<boolean>(false);
+  
   // API Results Control
   const [results, setResults] = useState<PredictionItem[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
@@ -54,8 +57,7 @@ export default function Home() {
   const aboutRef = useRef<HTMLDivElement>(null);
   const contactRef = useRef<HTMLDivElement>(null);
   const rightPanelRef = useRef<HTMLDivElement>(null);
-  const prevDebouncedSearchRef = useRef<string>("");
- 
+  
   useEffect(() => {
     if (viewMode !== "landing") return;
     const observer = new IntersectionObserver((entries) => {
@@ -82,29 +84,21 @@ export default function Home() {
     return () => elementObserver.disconnect();
   }, [viewMode]);
 
-  // Debouncing Search Input
+  // Reset Predict page state when navigating away
   useEffect(() => {
-    if (viewMode !== "predictor") return;
-    const handler = setTimeout(() => {
-      setDebouncedSearch(branchSearch);
-    }, 400);
-    return () => clearTimeout(handler);
-  }, [branchSearch, viewMode]);
-
-  // Triggering query on search query change
-  useEffect(() => {
-    if (viewMode !== "predictor") return;
-    if (debouncedSearch !== prevDebouncedSearchRef.current) {
-      prevDebouncedSearchRef.current = debouncedSearch;
-      if (percentile || debouncedSearch.trim() !== "") {
-        fetchPredictions(1, debouncedSearch);
-      } else {
-        setResults([]);
-        setTotalCount(0);
-        setHasPredicted(false);
-      }
+    if (viewMode === "landing") {
+      setPercentile("");
+      setBranchSearch("");
+      setLastSearchedQuery("");
+      setResults([]);
+      setTotalCount(0);
+      setHasPredicted(false);
+      setCategory("OPEN");
+      setGender("Male");
+      setCapRound("Round 1");
+      setMinPercentile("0");
     }
-  }, [debouncedSearch, viewMode, percentile]);
+  }, [viewMode]);
  
   const scrollToSection = (sectionId: string) => {
     setViewMode("landing");
@@ -114,13 +108,22 @@ export default function Home() {
     }, 100);
   };
  
-  const fetchPredictions = async (pageNumber: number, searchQuery: string = branchSearch) => {
+  const fetchPredictions = async (pageNumber: number, searchQuery: string) => {
     if (!percentile && !searchQuery.trim()) {
       setResults([]);
       setTotalCount(0);
       setHasPredicted(false);
       return;
     }
+    
+    if (searchQuery.trim() !== "") {
+      if (!percentile) {
+        setRecentCollegeSearches(prev => [searchQuery.trim(), ...prev.filter(s => s !== searchQuery.trim())].slice(0, 8));
+      } else {
+        setRecentBranchSearches(prev => [searchQuery.trim(), ...prev.filter(s => s !== searchQuery.trim())].slice(0, 8));
+      }
+    }
+
     setLoading(true);
     try {
       const percValue = percentile ? parseFloat(percentile) : -1;
@@ -133,6 +136,7 @@ export default function Home() {
         setTotalCount(data.total_count);
         setCurrentPage(pageNumber);
         setHasPredicted(true);
+        setBranchSearch(""); // Auto-clear search box after results load
         if (rightPanelRef.current) rightPanelRef.current.scrollTo({ top: 0, behavior: "instant" });
       }
     } catch (error: unknown) {
@@ -141,12 +145,19 @@ export default function Home() {
       setLoading(false);
     }
   };
- 
+  
+  const handleSearchSubmit = (query: string) => {
+    if (query.trim() === "" && !percentile) return;
+    setLastSearchedQuery(query.trim());
+    fetchPredictions(1, query.trim());
+  };
+
   const handlePredictSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!percentile) return alert("Please enter your percentile score!");
-    prevDebouncedSearchRef.current = branchSearch;
-    fetchPredictions(1, branchSearch);
+    setBranchSearch(""); // Reset search bar
+    setLastSearchedQuery("");
+    fetchPredictions(1, "");
   };
  
   const filteredResults = results;
@@ -394,8 +405,48 @@ export default function Home() {
                       placeholder={percentile ? "Search for branches (e.g., Computer Engineering, Computer Science, etc.)" : "Manual search by college name or college code"}
                       value={branchSearch}
                       onChange={(e) => setBranchSearch(e.target.value)}
-                      className="w-full bg-slate-900 border border-slate-800 rounded-lg pl-9 pr-4 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          handleSearchSubmit(branchSearch);
+                          setShowRecent(false);
+                        }
+                      }}
+                      onFocus={() => setShowRecent(true)}
+                      onBlur={() => setTimeout(() => setShowRecent(false), 200)}
+                      className="w-full bg-slate-900 border border-slate-800 rounded-lg pl-9 pr-14 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
                     />
+                    <button 
+                      onClick={() => {
+                        handleSearchSubmit(branchSearch);
+                        setShowRecent(false);
+                      }}
+                      className="absolute right-1 top-1 bottom-1 px-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded text-[10px] font-bold transition-colors"
+                    >
+                      GO
+                    </button>
+                    
+                    {/* RECENT SEARCHES DROPDOWN */}
+                    {showRecent && (percentile ? recentBranchSearches : recentCollegeSearches).length > 0 && (
+                      <div className="absolute top-full left-0 w-full mt-1 bg-slate-900 border border-slate-700 rounded-lg shadow-xl z-50 overflow-hidden">
+                        <div className="px-3 py-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-800 bg-slate-950/50">
+                          Recent {percentile ? "Branch" : "College"} Searches
+                        </div>
+                        {(percentile ? recentBranchSearches : recentCollegeSearches).map((recent, idx) => (
+                          <div 
+                            key={idx}
+                            className="px-3 py-2 text-xs text-slate-300 hover:bg-indigo-500/10 hover:text-indigo-300 cursor-pointer flex items-center gap-2"
+                            onClick={() => {
+                              setBranchSearch(recent);
+                              handleSearchSubmit(recent);
+                              setShowRecent(false);
+                            }}
+                          >
+                            <Search className="h-3 w-3 text-slate-500 shrink-0" />
+                            <span className="truncate">{recent}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </div>
                 <div className="text-xs bg-slate-800 border border-slate-700 px-3 py-1.5 rounded-md font-semibold text-indigo-400 whitespace-nowrap">
@@ -458,9 +509,9 @@ export default function Home() {
                     {/* PAGINATION PANEL */}
                     {totalPages > 1 && (
                       <div className="flex items-center justify-center gap-3 pt-4 pb-8 border-t border-slate-900">
-                        <button onClick={() => fetchPredictions(currentPage - 1, branchSearch)} disabled={currentPage === 1 || loading} className="p-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-400 hover:text-slate-200 disabled:opacity-40 transition-colors"><ChevronLeft className="h-4 w-4" /></button>
+                        <button onClick={() => fetchPredictions(currentPage - 1, lastSearchedQuery)} disabled={currentPage === 1 || loading} className="p-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-400 hover:text-slate-200 disabled:opacity-40 transition-colors"><ChevronLeft className="h-4 w-4" /></button>
                         <span className="text-xs font-semibold px-3 py-1 bg-slate-900 border border-slate-800 rounded-md text-slate-300">Page {currentPage} / {totalPages}</span>
-                        <button onClick={() => fetchPredictions(currentPage + 1, branchSearch)} disabled={currentPage === totalPages || loading} className="p-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-400 hover:text-slate-200 disabled:opacity-40 transition-colors"><ChevronRight className="h-4 w-4" /></button>
+                        <button onClick={() => fetchPredictions(currentPage + 1, lastSearchedQuery)} disabled={currentPage === totalPages || loading} className="p-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-400 hover:text-slate-200 disabled:opacity-40 transition-colors"><ChevronRight className="h-4 w-4" /></button>
                       </div>
                     )}
                   </>
