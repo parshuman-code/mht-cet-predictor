@@ -1,11 +1,13 @@
 "use client";
 import React, { useState, useEffect, useRef } from "react";
 import { UserButton, SignInButton, useAuth, useUser } from "@clerk/nextjs";
+import { useBookmarks, BookmarkItem } from "@/context/BookmarkContext";
 import {
   Search, SlidersHorizontal, GraduationCap, MapPin, Award, ChevronLeft, ChevronRight,
   ArrowDownNarrowWide, Mail, Phone, Info, Cpu, Database, Sparkles, Layers,
-  ListOrdered, CheckCircle2, ArrowRight, PanelLeftClose, PanelLeft
+  ListOrdered, CheckCircle2, ArrowRight, PanelLeftClose, PanelLeft, Bookmark, BookmarkCheck, List
 } from "lucide-react";
+import Link from "next/link";
  
 interface PredictionItem {
   college_code: string; college_name: string; choice_code: string; branch_name: string;
@@ -16,6 +18,7 @@ interface PredictionItem {
 export default function Home() {
   const { isSignedIn } = useAuth();
   const { user } = useUser();
+  const { bookmarks, addBookmark, removeBookmark, isBookmarked } = useBookmarks();
   const [viewMode, setViewMode] = useState<"landing" | "predictor">("landing");
   const [activeSection, setActiveSection] = useState<string>("hero");
   
@@ -235,7 +238,15 @@ export default function Home() {
         </div>
         <div className="flex items-center gap-3">
           {isSignedIn ? (
-            <UserButton />
+            <div className="flex items-center gap-4">
+              <Link href="/my-list" className="hidden md:flex items-center gap-2 text-sm font-bold text-slate-300 hover:text-indigo-400 transition-colors">
+                <Bookmark className="h-4 w-4" /> My List
+                {bookmarks.length > 0 && (
+                  <span className="bg-indigo-600 text-white text-[10px] px-1.5 py-0.5 rounded-full">{bookmarks.length}</span>
+                )}
+              </Link>
+              <UserButton afterSignOutUrl="/" appearance={{ elements: { avatarBox: "w-9 h-9 ring-2 ring-indigo-500/30" } }} />
+            </div>
           ) : (
             <SignInButton mode="modal">
               <button className="text-xs font-bold py-2.5 px-5 rounded-xl bg-indigo-600 text-white hover:bg-indigo-500 transition-all tracking-wide">
@@ -569,10 +580,41 @@ export default function Home() {
                           <div>
                             <div className="flex justify-between items-center gap-2 mb-3">
                               <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-950 text-slate-400 border border-slate-800">Code: {item.college_code}</span>
-                              <div className="flex gap-1.5 flex-wrap justify-end">
+                              <div className="flex gap-1.5 flex-wrap justify-end items-center">
                                 <span className="text-[9px] bg-fuchsia-500/10 text-fuchsia-400 px-2 py-0.5 rounded font-bold border border-fuchsia-500/20 whitespace-nowrap">CAP {item.cap_round}</span>
                                 <span className="text-[9px] bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded font-bold border border-emerald-500/20 whitespace-nowrap">{item.seat_type}</span>
                                 <span className="text-[9px] bg-indigo-500/10 text-indigo-400 px-2 py-0.5 rounded font-bold border border-indigo-500/20 whitespace-nowrap">{item.stage}</span>
+                                <button 
+                                  onClick={() => {
+                                    if (isBookmarked(item.college_name, item.seat_type)) {
+                                      const b = bookmarks.find(x => x.college_name === item.college_name && x.seat_type === item.seat_type);
+                                      if (b) removeBookmark(b.id);
+                                    } else {
+                                      // generate an ID using crypto.randomUUID
+                                      const newBookmark: BookmarkItem = {
+                                        id: crypto.randomUUID(),
+                                        college_name: item.college_name,
+                                        college_code: item.college_code,
+                                        seat_type: item.seat_type,
+                                        cap_round: item.cap_round,
+                                        cutoff_percentile: item.cutoff_percentile,
+                                        branch_name: item.branch_name,
+                                        cutoff_rank: item.cutoff_rank,
+                                        choice_code: item.choice_code,
+                                        home_university: item.home_university,
+                                      };
+                                      addBookmark(newBookmark);
+                                    }
+                                  }}
+                                  className="ml-1 p-1 hover:bg-slate-800 rounded transition-colors group"
+                                  title={isBookmarked(item.college_name, item.seat_type) ? "Remove Bookmark" : "Bookmark this college"}
+                                >
+                                  {isBookmarked(item.college_name, item.seat_type) ? (
+                                    <BookmarkCheck className="h-4 w-4 text-emerald-500" />
+                                  ) : (
+                                    <Bookmark className="h-4 w-4 text-slate-500 group-hover:text-indigo-400" />
+                                  )}
+                                </button>
                               </div>
                             </div>
                             <h4 className="text-sm font-bold text-slate-100 leading-snug line-clamp-2 mb-1">{item.college_name}</h4>
