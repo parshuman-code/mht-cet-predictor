@@ -147,8 +147,8 @@ def add_bookmark(req: BookmarkAddRequest):
                 if b.get("id") == req.bookmark["id"]:
                     is_dup = True
                     break
-                # Also check if exactly same prediction is added
-                if b.get("college_name") == req.bookmark.get("college_name") and b.get("seat_type") == req.bookmark.get("seat_type"):
+                # Duplicate = same choice_code + seat_type + cap_round (allows same college across different CAP rounds)
+                if b.get("choice_code") == req.bookmark.get("choice_code") and b.get("seat_type") == req.bookmark.get("seat_type") and b.get("cap_round") == req.bookmark.get("cap_round"):
                     is_dup = True
                     break
                     
