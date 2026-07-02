@@ -66,6 +66,7 @@ export const BookmarkProvider = ({ children }: { children: ReactNode }) => {
   const addBookmark = async (item: BookmarkItem) => {
     if (!userId) return;
     try {
+      // Optimistic update
       setBookmarks((prev) => [...prev, item]);
       
       const res = await fetch(`${backendUrlRef.current}/bookmarks/add`, {
@@ -73,14 +74,28 @@ export const BookmarkProvider = ({ children }: { children: ReactNode }) => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ user_id: userId, bookmark: item }),
       });
+
+      // Handle non-JSON responses (e.g., 404 HTML from sleeping Render backend)
+      const contentType = res.headers.get("content-type");
+      if (!contentType || !contentType.includes("application/json")) {
+        // Backend is sleeping or returned HTML error page
+        console.error("Bookmark API returned non-JSON:", res.status, res.statusText);
+        // Keep the optimistic update — don't revert, just silently fail so UX is smooth
+        return;
+      }
+
       const data = await res.json();
       if (data.status !== "success") {
+        // Revert optimistic update only on real duplicate/business errors
         setBookmarks((prev) => prev.filter((b) => b.id !== item.id));
-        alert(data.message || "Failed to add bookmark");
+        const errMsg = data.message
+          || (Array.isArray(data.detail) ? data.detail[0]?.msg : data.detail)
+          || "Failed to add bookmark";
+        alert(errMsg);
       }
     } catch (error) {
-      console.error(error);
-      setBookmarks((prev) => prev.filter((b) => b.id !== item.id));
+      // Network error or JSON parse error — keep optimistic update silently
+      console.error("Bookmark network error:", error);
     }
   };
 
