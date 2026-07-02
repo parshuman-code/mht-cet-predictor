@@ -3,11 +3,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { UserButton, SignInButton, useAuth, useUser } from "@clerk/nextjs";
 import {
   Search, SlidersHorizontal, GraduationCap, MapPin, Award, ChevronLeft, ChevronRight,
-<<<<<<< HEAD
   ArrowDownNarrowWide, Mail, Phone, Info, Cpu, Database, Sparkles, Layers,
-=======
-  BookOpen, ArrowDownNarrowWide, Mail, Phone, Info, Cpu, Database, Sparkles, Layers,
->>>>>>> 826d6cf31bc03400d3d253452982325bc83771ee
   ListOrdered, CheckCircle2, ArrowRight, PanelLeftClose, PanelLeft
 } from "lucide-react";
  
@@ -22,12 +18,9 @@ export default function Home() {
   const { user } = useUser();
   const [viewMode, setViewMode] = useState<"landing" | "predictor">("landing");
   const [activeSection, setActiveSection] = useState<string>("hero");
-<<<<<<< HEAD
   
   // Access Control: Block if explicitly set to false
   const isAllowed = user?.publicMetadata?.isAllowed !== false;
-=======
->>>>>>> 826d6cf31bc03400d3d253452982325bc83771ee
  
   // Sidebar Hover/Toggle States
   const [isSidebarExpanded, setIsSidebarExpanded] = useState<boolean>(false);
@@ -53,23 +46,15 @@ export default function Home() {
   const itemsPerPage = 20;
  
   // Backend URL Selection
-<<<<<<< HEAD
   // Ref so fetchPredictions always reads the latest URL even in stale closures
   const backendUrlRef = useRef<string>("https://mht-cet-predictor-f8dl.onrender.com");
-=======
-  const [backendUrl, setBackendUrl] = useState<string>("https://mht-cet-predictor-f8dl.onrender.com");
->>>>>>> 826d6cf31bc03400d3d253452982325bc83771ee
 
   useEffect(() => {
     if (typeof window !== "undefined") {
       const hostname = window.location.hostname;
       if (hostname === "localhost" || hostname === "127.0.0.1" || hostname.startsWith("192.168.")) {
-<<<<<<< HEAD
         const localUrl = "http://localhost:8001";
         backendUrlRef.current = localUrl;
-=======
-        setBackendUrl("http://localhost:8001");
->>>>>>> 826d6cf31bc03400d3d253452982325bc83771ee
       }
     }
   }, []);
@@ -107,37 +92,7 @@ export default function Home() {
     return () => elementObserver.disconnect();
   }, [viewMode]);
 
-<<<<<<< HEAD
   const fetchPredictions = React.useCallback(async (
-=======
-  // Reset Predict page state when navigating away
-  useEffect(() => {
-    if (viewMode === "landing") {
-      setPercentile("");
-      setBranchSearch("");
-      setLastSearchedQuery("");
-      setResults([]);
-      setTotalCount(0);
-      setHasPredicted(false);
-      setCategory("OPEN");
-      setGender("Male");
-      setCapRound("Round 1");
-      setMinPercentile("0");
-    } else if (viewMode === "predictor") {
-      fetchPredictions(1, "");
-    }
-  }, [viewMode]);
- 
-  const scrollToSection = (sectionId: string) => {
-    setViewMode("landing");
-    setTimeout(() => {
-      const element = document.getElementById(sectionId);
-      if (element) element.scrollIntoView({ behavior: "smooth", block: "start" });
-    }, 100);
-  };
- 
-  const fetchPredictions = async (
->>>>>>> 826d6cf31bc03400d3d253452982325bc83771ee
     pageNumber: number, 
     searchQuery: string,
     overridePercentile?: string,
@@ -165,13 +120,9 @@ export default function Home() {
       const mVal = overrideMinPercentile !== undefined ? overrideMinPercentile : minPercentile;
 
       const percValue = pVal ? parseFloat(pVal) : -1;
-<<<<<<< HEAD
       // Use ref so we always get the latest URL, avoiding stale closure bugs
       const baseUrl = backendUrlRef.current;
       const apiUrl = `${baseUrl}/predict?percentile=${percValue}&category=${cVal}&gender=${gVal}&cap_round=${rVal}&min_percentile=${mVal}&page=${pageNumber}&limit=${itemsPerPage}&search=${encodeURIComponent(searchQuery)}`;
-=======
-      const apiUrl = `${backendUrl}/predict?percentile=${percValue}&category=${cVal}&gender=${gVal}&cap_round=${rVal}&min_percentile=${mVal}&page=${pageNumber}&limit=${itemsPerPage}&search=${encodeURIComponent(searchQuery)}`;
->>>>>>> 826d6cf31bc03400d3d253452982325bc83771ee
       const response = await fetch(apiUrl, { method: "GET", headers: { Accept: "application/json" } });
       if (!response.ok) throw new Error(`HTTP Error Status: ${response.status}`);
       const data = await response.json();
@@ -229,12 +180,6 @@ export default function Home() {
     setLastSearchedQuery(query.trim());
     fetchPredictions(1, query.trim());
   };
-  
-  const handleSearchSubmit = (query: string) => {
-    if (query.trim() === "" && !percentile) return;
-    setLastSearchedQuery(query.trim());
-    fetchPredictions(1, query.trim());
-  };
 
   const handlePredictSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -250,7 +195,6 @@ export default function Home() {
     setLastSearchedQuery("");
     setCategory("OPEN");
     setGender("Male");
-<<<<<<< HEAD
     setCapRound("All Rounds");
     setMinPercentile("0");
     setResults([]);
@@ -259,11 +203,6 @@ export default function Home() {
     setCurrentPage(1);
     // Fetch all data with no percentile filter (percentile=-1 means no filter)
     fetchPredictions(1, "", "-1", "OPEN", "Male", "All Rounds", "0");
-=======
-    setCapRound("Round 1");
-    setMinPercentile("0");
-    fetchPredictions(1, "", "", "OPEN", "Male", "Round 1", "0");
->>>>>>> 826d6cf31bc03400d3d253452982325bc83771ee
   };
  
   const filteredResults = results;
@@ -285,13 +224,9 @@ export default function Home() {
           <div className="h-9 w-9 bg-gradient-to-tr from-indigo-500 to-cyan-500 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-500/20">
             <GraduationCap className="h-5 w-5 text-white" />
           </div>
-<<<<<<< HEAD
           <span className="text-xl font-black tracking-tight text-white">
             Clg<span className="font-[family-name:var(--font-caveat)] text-2xl bg-gradient-to-r from-pink-400 via-purple-400 to-cyan-400 bg-clip-text text-transparent">Predict</span>
           </span>
-=======
-          <span className="text-xl font-black tracking-tight bg-gradient-to-r from-indigo-400 via-purple-400 to-cyan-400 bg-clip-text text-transparent">ClgPredict</span>
->>>>>>> 826d6cf31bc03400d3d253452982325bc83771ee
         </div>
         <div className="hidden md:flex items-center gap-1 bg-slate-900/40 p-1 rounded-full border border-slate-800/50 backdrop-blur-sm">
           {["hero", "purpose", "about", "contact"].map((sec) => (
@@ -299,7 +234,6 @@ export default function Home() {
           ))}
         </div>
         <div className="flex items-center gap-3">
-<<<<<<< HEAD
           {isSignedIn ? (
             <UserButton />
           ) : (
@@ -309,11 +243,6 @@ export default function Home() {
               </button>
             </SignInButton>
           )}
-=======
-          <button onClick={() => setViewMode(viewMode === "predictor" ? "landing" : "predictor")} className="text-xs font-bold py-2.5 px-5 rounded-xl transition-all tracking-wide uppercase border bg-gradient-to-r from-indigo-500/10 to-cyan-500/10 border-indigo-500/20 text-indigo-300 hover:scale-105 backdrop-blur-sm">
-            {viewMode === "predictor" ? "Back To Home" : "Launch Predictor"}
-          </button>
->>>>>>> 826d6cf31bc03400d3d253452982325bc83771ee
         </div>
       </nav>
  
@@ -336,7 +265,6 @@ export default function Home() {
               </div>
               <h1 className="text-5xl md:text-7xl font-black tracking-tight text-white mb-8 leading-[1.15] max-w-5xl">Navigate Maharashtra Admissions With Absolute <span className="bg-gradient-to-r from-indigo-400 via-purple-400 to-cyan-400 bg-clip-text text-transparent">Certainty</span></h1>
               <p className="text-slate-400 text-base md:text-lg max-w-2xl mb-12 leading-relaxed">Avoid manual PDF verification errors. Plug your core percentile into our cloud processing engine to map ideal institutional counseling seats instantly.</p>
-<<<<<<< HEAD
               
               {isSignedIn ? (
                 <button onClick={() => setViewMode("predictor")} className="group bg-gradient-to-r from-indigo-500 via-purple-500 to-cyan-500 hover:opacity-95 text-white font-extrabold py-4 px-10 rounded-2xl shadow-2xl shadow-indigo-500/20 transition-all duration-300 flex items-center gap-3 text-sm tracking-wider uppercase hover:scale-105">
@@ -349,11 +277,6 @@ export default function Home() {
                   </button>
                 </SignInButton>
               )}
-=======
-              <button onClick={() => setViewMode("predictor")} className="group bg-gradient-to-r from-indigo-500 via-purple-500 to-cyan-500 hover:opacity-95 text-white font-extrabold py-4 px-10 rounded-2xl shadow-2xl shadow-indigo-500/20 transition-all duration-300 flex items-center gap-3 text-sm tracking-wider uppercase hover:scale-105">
-                Start Predicting Colleges <ArrowRight className="h-4 w-4 group-hover:translate-x-1.5 transition-transform duration-200" />
-              </button>
->>>>>>> 826d6cf31bc03400d3d253452982325bc83771ee
             </section>
  
             {/* PURPOSE SECTION */}
@@ -362,11 +285,7 @@ export default function Home() {
                 <div className="text-center mb-16 scroll-pop opacity-0 translate-y-12 transition-all duration-700 ease-out">
                   <span className="text-xs text-indigo-400 uppercase font-black tracking-widest block mb-3">System Architecture</span>
                   <h2 className="text-3xl md:text-4xl font-black text-white tracking-tight">Purpose Of Making This Tool</h2>
-<<<<<<< HEAD
                   <p className="text-slate-400 text-sm md:text-base mt-4 max-w-2xl mx-auto leading-relaxed">We extracted bulk allocation spreadsheets into optimized search segments so you don&apos;t lose crucial choice codes during critical CAP option form fillings.</p>
-=======
-                  <p className="text-slate-400 text-sm md:text-base mt-4 max-w-2xl mx-auto leading-relaxed">We extracted bulk allocation spreadsheets into optimized search segments so you don't lose crucial choice codes during critical CAP option form fillings.</p>
->>>>>>> 826d6cf31bc03400d3d253452982325bc83771ee
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                   {[
@@ -440,7 +359,6 @@ export default function Home() {
  
         {/* DASHBOARD PREDICTOR CORE WITH HOVER EXPANDABLE SIDEBAR */}
         {viewMode === "predictor" && (
-<<<<<<< HEAD
           !isAllowed ? (
             <div className="flex-1 flex items-center justify-center bg-slate-950 p-6">
               <div className="max-w-md w-full bg-slate-900 border border-slate-800 rounded-3xl p-8 text-center shadow-2xl relative overflow-hidden">
@@ -461,8 +379,6 @@ export default function Home() {
               </div>
             </div>
           ) : (
-=======
->>>>>>> 826d6cf31bc03400d3d253452982325bc83771ee
           <div className="flex-1 flex h-[calc(100vh-73px)] w-full overflow-hidden relative">
             
             {/* HOVER EXPANDABLE SIDEBAR */}
