@@ -245,7 +245,7 @@ export default function Home() {
                   <span className="bg-indigo-600 text-white text-[10px] px-1.5 py-0.5 rounded-full">{bookmarks.length}</span>
                 )}
               </Link>
-              <UserButton afterSignOutUrl="/" appearance={{ elements: { avatarBox: "w-9 h-9 ring-2 ring-indigo-500/30" } }} />
+              <UserButton appearance={{ elements: { avatarBox: "w-9 h-9 ring-2 ring-indigo-500/30" } }} />
             </div>
           ) : (
             <SignInButton mode="modal">
@@ -586,11 +586,10 @@ export default function Home() {
                                 <span className="text-[9px] bg-indigo-500/10 text-indigo-400 px-2 py-0.5 rounded font-bold border border-indigo-500/20 whitespace-nowrap">{item.stage}</span>
                                 <button 
                                   onClick={() => {
-                                    if (isBookmarked(item.college_name, item.seat_type)) {
-                                      const b = bookmarks.find(x => x.college_name === item.college_name && x.seat_type === item.seat_type);
+                                    if (isBookmarked(item.choice_code, item.seat_type, item.cap_round)) {
+                                      const b = bookmarks.find(x => x.choice_code === item.choice_code && x.seat_type === item.seat_type && x.cap_round === item.cap_round);
                                       if (b) removeBookmark(b.id);
                                     } else {
-                                      // generate an ID using crypto.randomUUID
                                       const newBookmark: BookmarkItem = {
                                         id: crypto.randomUUID(),
                                         college_name: item.college_name,
@@ -607,9 +606,9 @@ export default function Home() {
                                     }
                                   }}
                                   className="ml-1 p-1 hover:bg-slate-800 rounded transition-colors group"
-                                  title={isBookmarked(item.college_name, item.seat_type) ? "Remove Bookmark" : "Bookmark this college"}
+                                  title={isBookmarked(item.choice_code, item.seat_type, item.cap_round) ? "Remove Bookmark" : "Bookmark this college"}
                                 >
-                                  {isBookmarked(item.college_name, item.seat_type) ? (
+                                  {isBookmarked(item.choice_code, item.seat_type, item.cap_round) ? (
                                     <BookmarkCheck className="h-4 w-4 text-emerald-500" />
                                   ) : (
                                     <Bookmark className="h-4 w-4 text-slate-500 group-hover:text-indigo-400" />

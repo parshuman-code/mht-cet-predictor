@@ -18,7 +18,7 @@ interface BookmarkContextType {
   addBookmark: (item: BookmarkItem) => Promise<void>;
   removeBookmark: (id: string) => Promise<void>;
   reorderBookmarks: (newBookmarks: BookmarkItem[]) => Promise<void>;
-  isBookmarked: (collegeName: string, seatType: string) => boolean;
+  isBookmarked: (choiceCode: string, seatType: string, capRound: string) => boolean;
   loading: boolean;
 }
 
@@ -119,8 +119,8 @@ export const BookmarkProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  const isBookmarked = (collegeName: string, seatType: string) => {
-    return bookmarks.some(b => b.college_name === collegeName && b.seat_type === seatType);
+  const isBookmarked = (choiceCode: string, seatType: string, capRound: string) => {
+    return bookmarks.some(b => b.choice_code === choiceCode && b.seat_type === seatType && b.cap_round === capRound);
   };
 
   return (
