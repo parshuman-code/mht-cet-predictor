@@ -1,6 +1,8 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pymongo import MongoClient
+from pydantic import BaseModel
+from typing import List, Dict, Any
 import os
 
 app = FastAPI(title="MHT-CET Predictor API")
@@ -17,6 +19,19 @@ MONGO_URI = os.environ.get("MONGO_URI", "mongodb+srv://admin_prashant:Prashant12
 client = MongoClient(MONGO_URI)
 db = client["MHTCET_DB"]
 collection = db["cutoffs"]
+bookmarks_collection = db["user_bookmarks"]
+
+class BookmarkAddRequest(BaseModel):
+    user_id: str
+    bookmark: Dict[str, Any]
+
+class BookmarkRemoveRequest(BaseModel):
+    user_id: str
+    bookmark_id: str
+
+class BookmarkReorderRequest(BaseModel):
+    user_id: str
+    bookmarks: List[Dict[str, Any]]
 
 @app.get("/")
 def home():
@@ -104,3 +119,69 @@ def predict_colleges(
             "limit": limit,
             "predictions": []
         }
+
+@app.get("/bookmarks/{user_id}")
+def get_bookmarks(user_id: str):
+    try:
+        doc = bookmarks_collection.find_one({"user_id": user_id}, {"_id": 0})
+        if doc:
+            return {"status": "success", "bookmarks": doc.get("bookmarks", [])}
+        return {"status": "success", "bookmarks": []}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+@app.post("/bookmarks/add")
+def add_bookmark(req: BookmarkAddRequest):
+    try:
+        if "id" not in req.bookmark:
+            return {"status": "error", "message": "Bookmark must have an id"}
+        
+        doc = bookmarks_collection.find_one({"user_id": req.user_id})
+        if not doc:
+            bookmarks_collection.insert_one({"user_id": req.user_id, "bookmarks": [req.bookmark]})
+        else:
+            bookmarks = doc.get("bookmarks", [])
+            # Check duplicate by id or by college properties (college_name + seat_type)
+            is_dup = False
+            for b in bookmarks:
+                if b.get("id") == req.bookmark["id"]:
+                    is_dup = True
+                    break
+                # Duplicate = same choice_code + seat_type + cap_round (allows same college across different CAP rounds)
+                if b.get("choice_code") == req.bookmark.get("choice_code") and b.get("seat_type") == req.bookmark.get("seat_type") and b.get("cap_round") == req.bookmark.get("cap_round"):
+                    is_dup = True
+                    break
+                    
+            if is_dup:
+                return {"status": "error", "message": "You have already added this college"}
+                
+            bookmarks_collection.update_one(
+                {"user_id": req.user_id},
+                {"$push": {"bookmarks": req.bookmark}}
+            )
+        return {"status": "success"}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+@app.post("/bookmarks/remove")
+def remove_bookmark(req: BookmarkRemoveRequest):
+    try:
+        bookmarks_collection.update_one(
+            {"user_id": req.user_id},
+            {"$pull": {"bookmarks": {"id": req.bookmark_id}}}
+        )
+        return {"status": "success"}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+@app.post("/bookmarks/reorder")
+def reorder_bookmarks(req: BookmarkReorderRequest):
+    try:
+        bookmarks_collection.update_one(
+            {"user_id": req.user_id},
+            {"$set": {"bookmarks": req.bookmarks}},
+            upsert=True
+        )
+        return {"status": "success"}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
