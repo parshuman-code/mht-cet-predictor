@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { SignInButton, UserButton, useAuth, useClerk } from "@clerk/nextjs";
-import { Bookmark, GraduationCap, Loader2 } from "lucide-react";
+import { Bookmark, GraduationCap } from "lucide-react";
+import { useEffect, useState } from "react";
 import { useBookmarks } from "@/context/BookmarkContext";
 
 type SiteNavbarProps = {
@@ -38,6 +39,11 @@ export function SiteNavbar({
   const { bookmarks } = useBookmarks();
   const router = useRouter();
   const pathname = usePathname();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const goToMyList = () => {
     if (!isSignedIn) {
@@ -142,9 +148,9 @@ export function SiteNavbar({
         </div>
       )}
 
-      <div className="flex items-center gap-3">
-        {!isLoaded ? (
-          <Loader2 className="h-5 w-5 animate-spin text-slate-600" />
+      <div className="flex min-w-[108px] items-center justify-end gap-3">
+        {!mounted || !isLoaded ? (
+          <div className="h-9 w-9 rounded-full bg-slate-200/80" aria-hidden="true" />
         ) : isSignedIn ? (
           <div className="flex items-center gap-4">
             <button

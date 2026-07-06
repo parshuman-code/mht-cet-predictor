@@ -12,10 +12,9 @@ type PageTransitionProps = {
 export function PageTransition({ children, className = "", delay = 0 }: PageTransitionProps) {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 10 }}
+      initial={{ opacity: 1, y: 0 }}
       animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -8 }}
-      transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1], delay }}
+      transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1], delay }}
       className={className}
     >
       {children}
@@ -27,10 +26,9 @@ export function ViewTransition({ children, viewKey, className = "" }: { children
   return (
     <motion.div
       key={viewKey}
-      initial={{ opacity: 0, y: 12 }}
+      initial={{ opacity: 1, y: 0 }}
       animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -10 }}
-      transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
+      transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
       className={className}
     >
       {children}

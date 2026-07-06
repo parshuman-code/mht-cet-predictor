@@ -3,9 +3,7 @@ import React, { useState, useEffect, useRef, useMemo } from "react";
 import { useAuth, useClerk, useUser } from "@clerk/nextjs";
 import { useBookmarks, BookmarkItem } from "@/context/BookmarkContext";
 import { SiteNavbar } from "@/components/SiteNavbar";
-import { AuthLoadingScreen } from "@/components/AuthGate";
 import { ViewTransition } from "@/components/PageTransition";
-import { AnimatePresence } from "framer-motion";
 import {
   Search, SlidersHorizontal, GraduationCap, MapPin, Award, ChevronLeft, ChevronRight,
   ArrowDownNarrowWide, Mail, Phone, Info, Cpu, Database, Sparkles, Layers,
@@ -52,6 +50,7 @@ export default function Home() {
   
   // Access Control: Block if explicitly set to false
   const isAllowed = user?.publicMetadata?.isAllowed !== false;
+  const showPredictor = viewMode === "predictor" && isSignedIn;
  
   // Sidebar Hover/Toggle States
   const [isSidebarExpanded, setIsSidebarExpanded] = useState<boolean>(false);
@@ -127,7 +126,7 @@ export default function Home() {
   const rightPanelRef = useRef<HTMLDivElement>(null);
   
   useEffect(() => {
-    if (viewMode !== "landing") return;
+    if (showPredictor) return;
     const observer = new IntersectionObserver((entries) => {
       entries.forEach((entry) => { if (entry.isIntersecting) setActiveSection(entry.target.id); });
     }, { root: null, rootMargin: "-30% 0px -60% 0px", threshold: 0 });
@@ -135,22 +134,28 @@ export default function Home() {
     const refs = [heroRef, purposeRef, howToUseRef, aboutRef, contactRef];
     refs.forEach((ref) => { if (ref.current) observer.observe(ref.current); });
     return () => observer.disconnect();
-  }, [viewMode]);
+  }, [showPredictor]);
  
   useEffect(() => {
-    if (viewMode !== "landing") return;
+    if (showPredictor) return;
+    const reveal = (el: Element) => {
+      el.classList.add("opacity-100", "translate-y-0");
+      el.classList.remove("opacity-0", "translate-y-12");
+    };
     const elementObserver = new IntersectionObserver((entries) => {
       entries.forEach((entry) => {
-        if (entry.isIntersecting) {
-          entry.target.classList.add("opacity-100", "translate-y-0");
-          entry.target.classList.remove("opacity-0", "translate-y-12");
-        }
+        if (entry.isIntersecting) reveal(entry.target);
       });
     }, { threshold: 0.1, rootMargin: "0px 0px -50px 0px" });
- 
-    document.querySelectorAll(".scroll-pop").forEach((el) => elementObserver.observe(el));
+
+    const elements = document.querySelectorAll(".scroll-pop");
+    elements.forEach((el) => {
+      elementObserver.observe(el);
+      const rect = el.getBoundingClientRect();
+      if (rect.top < window.innerHeight && rect.bottom > 0) reveal(el);
+    });
     return () => elementObserver.disconnect();
-  }, [viewMode]);
+  }, [showPredictor]);
 
   const fetchPredictions = React.useCallback(async (
     pageNumber: number, 
@@ -513,17 +518,6 @@ export default function Home() {
 
   const filteredResults = results;
   const totalPages = Math.ceil(totalCount / itemsPerPage);
-
-  if (!isLoaded) {
-    return (
-      <div className="flex h-screen w-screen flex-col overflow-auto bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 font-sans text-slate-900 selection:bg-amber-300/40">
-        <SiteNavbar variant="home" viewMode={viewMode} activeSection={activeSection} />
-        <div className="flex-1 pt-[73px]">
-          <AuthLoadingScreen />
-        </div>
-      </div>
-    );
-  }
  
   return (
     <div className="h-screen w-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 text-slate-900 font-sans overflow-auto selection:bg-amber-300/40 flex flex-col">
@@ -539,8 +533,7 @@ export default function Home() {
  
       {/* MAIN CONTAINER */}
       <div className="flex-1 flex flex-col pt-[73px] min-h-0 relative">
-        <AnimatePresence mode="wait">
-        {viewMode === "landing" && (
+        {!showPredictor && (
           <ViewTransition viewKey="landing" className="w-full flex-1">
           <div className="w-full flex-1 overflow-y-auto custom-scrollbar relative bg-gradient-to-b from-slate-50 via-blue-50 to-indigo-50 snap-y snap-mandatory scroll-smooth min-h-[calc(100vh-73px)]">
               <div className="fixed inset-0 pointer-events-none z-0">
@@ -709,7 +702,7 @@ export default function Home() {
         )}
  
         {/* DASHBOARD PREDICTOR CORE WITH HOVER EXPANDABLE SIDEBAR */}
-        {viewMode === "predictor" && isSignedIn && (
+        {showPredictor && (
           <ViewTransition viewKey="predictor" className="flex min-h-0 flex-1 flex-col">
           {!isAllowed ? (
             <div className="flex-1 flex items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 p-6">
@@ -1079,7 +1072,6 @@ export default function Home() {
           )}
           </ViewTransition>
         )}
-        </AnimatePresence>
       </div>
     </div>
   );
