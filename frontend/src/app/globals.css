@@ -102,3 +102,12 @@ body {
 .pencil-underline { position: relative; padding-bottom: 2px; border-bottom: 2px dashed #d4a574; }
 .diary-entry { background: linear-gradient(to right, #f5f3f0 1px, transparent 1px); background-size: 2px 20px; background-position: 0 0; background-repeat: repeat-y; }
 .college-card-sketch { border: 2px solid #8b7355; border-radius: 8px; box-shadow: 3px 3px 0px rgba(139, 115, 85, 0.2); }
+
+html {
+  scroll-behavior: smooth;
+}
+
+.page-shell {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #f8fafc 0%, #eff6ff 50%, #eef2ff 100%);
+}

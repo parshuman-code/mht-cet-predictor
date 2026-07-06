@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { ClerkProvider } from "@clerk/nextjs";
 import { BookmarkProvider } from "@/context/BookmarkContext";
+import { AuthRedirectHandler } from "@/components/AuthRedirectHandler";
 
 export const metadata: Metadata = {
   title: "ClgPredict — MHT-CET College Predictor",
@@ -15,10 +16,15 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <ClerkProvider>
+    <ClerkProvider
+      signInFallbackRedirectUrl="/"
+      signUpFallbackRedirectUrl="/"
+      afterSignOutUrl="/"
+    >
       <html lang="en" className="h-full antialiased">
         <body className="min-h-full flex flex-col">
           <BookmarkProvider>
+            <AuthRedirectHandler />
             {children}
           </BookmarkProvider>
         </body>

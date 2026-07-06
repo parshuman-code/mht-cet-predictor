@@ -1,8 +1,11 @@
 "use client";
 
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useMemo } from "react";
 import { useBookmarks, BookmarkItem } from "@/context/BookmarkContext";
+import { SiteNavbar } from "@/components/SiteNavbar";
+import { AuthGate } from "@/components/AuthGate";
+import { PageTransition } from "@/components/PageTransition";
 import { ArrowLeft, Download, GripVertical, Trash2, Bookmark } from "lucide-react";
 import {
   closestCenter,
@@ -130,8 +133,13 @@ function SortableBookmarkRow({
 
 export default function MyListPage() {
   const { bookmarks, removeBookmark, reorderBookmarks, loading } = useBookmarks();
+  const router = useRouter();
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
   const bookmarkIds = useMemo(() => bookmarks.map((bookmark) => bookmark.id), [bookmarks]);
+
+  const goToPredictor = () => {
+    router.push("/?view=predictor");
+  };
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
@@ -254,8 +262,14 @@ export default function MyListPage() {
   };
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-[#f6f1e8] px-4 py-10 text-slate-900">
-      <main className="relative mx-auto max-w-6xl overflow-visible rounded-lg border border-slate-300 bg-white/95 pl-8 shadow-2xl shadow-slate-900/10 md:pl-14">
+    <div className="relative min-h-screen overflow-hidden bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 text-slate-900">
+      <SiteNavbar variant="subpage" onOpenPredictor={goToPredictor} />
+      <AuthGate
+        title="Sign in to view your list"
+        description="Your saved colleges stay linked to your account. Sign in or create a free account to open your preference diary."
+      >
+        <PageTransition className="px-4 pb-10 pt-[97px]">
+          <main className="relative mx-auto max-w-6xl overflow-visible rounded-lg border border-slate-300 bg-white/95 pl-8 shadow-2xl shadow-slate-900/10 md:pl-14">
         <div className="pointer-events-none absolute inset-y-0 left-0 hidden w-14 border-r border-blue-100 bg-blue-50/60 md:block">
           {Array.from({ length: 14 }).map((_, index) => (
             <div
@@ -280,12 +294,13 @@ export default function MyListPage() {
           </div>
 
           <div className="flex flex-wrap gap-2">
-            <Link
-              href="/?view=predictor"
+            <button
+              type="button"
+              onClick={goToPredictor}
               className="inline-flex items-center gap-2 rounded-full bg-slate-900 px-4 py-3 text-sm font-bold text-white shadow-lg transition hover:bg-slate-800"
             >
               <ArrowLeft className="h-4 w-4" /> Back to Predictor
-            </Link>
+            </button>
             <button
               type="button"
               onClick={exportPdf}
@@ -312,12 +327,13 @@ export default function MyListPage() {
               <p className="mt-2 text-sm font-semibold text-slate-700">
                 Bookmark colleges from predictor and they will appear here as preference strips.
               </p>
-              <Link
-                href="/?view=predictor"
+              <button
+                type="button"
+                onClick={goToPredictor}
                 className="mt-6 inline-flex items-center justify-center rounded-full bg-blue-700 px-5 py-3 text-sm font-bold text-white transition hover:bg-blue-600"
               >
                 Open Predictor
-              </Link>
+              </button>
             </div>
           ) : (
             <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
@@ -336,7 +352,9 @@ export default function MyListPage() {
             </DndContext>
           )}
         </section>
-      </main>
+          </main>
+        </PageTransition>
+      </AuthGate>
     </div>
   );
 }

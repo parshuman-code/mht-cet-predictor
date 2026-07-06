@@ -1,7 +1,11 @@
 "use client";
 import React, { useState, useEffect, useRef, useMemo } from "react";
-import { UserButton, SignInButton, useAuth, useUser } from "@clerk/nextjs";
+import { useAuth, useClerk, useUser } from "@clerk/nextjs";
 import { useBookmarks, BookmarkItem } from "@/context/BookmarkContext";
+import { SiteNavbar } from "@/components/SiteNavbar";
+import { AuthLoadingScreen } from "@/components/AuthGate";
+import { ViewTransition } from "@/components/PageTransition";
+import { AnimatePresence } from "framer-motion";
 import {
   Search, SlidersHorizontal, GraduationCap, MapPin, Award, ChevronLeft, ChevronRight,
   ArrowDownNarrowWide, Mail, Phone, Info, Cpu, Database, Sparkles, Layers,
@@ -37,12 +41,14 @@ type PredictorState = Partial<{
 }>;
  
 export default function Home() {
-  const { isSignedIn } = useAuth();
+  const { isSignedIn, isLoaded } = useAuth();
+  const { openSignIn } = useClerk();
   const { user } = useUser();
   const { bookmarks, addBookmark, removeBookmark, isBookmarked } = useBookmarks();
   const router = useRouter();
   const [viewMode, setViewMode] = useState<"landing" | "predictor">("landing");
   const [activeSection, setActiveSection] = useState<string>("hero");
+  const [pendingPredictorAccess, setPendingPredictorAccess] = useState(false);
   
   // Access Control: Block if explicitly set to false
   const isAllowed = user?.publicMetadata?.isAllowed !== false;
@@ -282,23 +288,25 @@ export default function Home() {
 
   // On first mount, restore predictor state if available in history.state
   React.useEffect(() => {
-    if (typeof window === "undefined") return;
+    if (typeof window === "undefined" || !isLoaded) return;
 
     const params = new URLSearchParams(window.location.search);
     const shouldOpenPredictor = params.get("view") === "predictor";
     const savedState = readSavedPredictorState();
 
-    const restored = restorePredictorState(savedState);
-    if (shouldOpenPredictor) {
+    if (shouldOpenPredictor && isSignedIn) {
       if (params.get("view") === "predictor") {
         window.history.replaceState({ ...(window.history.state || {}), predictorState: savedState ?? predictorStateRef.current }, "", window.location.pathname);
       }
+      const restored = restorePredictorState(savedState);
       setViewMode("predictor");
       if (!restored) setHasPredicted(false);
+    } else if (shouldOpenPredictor) {
+      window.history.replaceState({ ...(window.history.state || {}), predictorState: savedState ?? predictorStateRef.current }, "", window.location.pathname);
     }
 
     hasHydratedViewRef.current = true;
-  }, [readSavedPredictorState, restorePredictorState]);
+  }, [isLoaded, isSignedIn, readSavedPredictorState, restorePredictorState]);
 
   // Reset Predict page state when navigating away
   useEffect(() => {
@@ -336,7 +344,7 @@ export default function Home() {
     }, 100);
   };
 
-  const handleStartPredicting = () => {
+  const openPredictor = React.useCallback(() => {
     setPercentile("");
     setBranchSearch("");
     setLastSearchedQuery("");
@@ -359,12 +367,37 @@ export default function Home() {
     }
     setViewMode("predictor");
     fetchPredictions(1, "", "-1", "OPEN", "Male", "All Rounds", "0", "All Cities");
+  }, [fetchPredictions]);
+
+  const handleStartPredicting = () => {
+    if (!isSignedIn) {
+      setPendingPredictorAccess(true);
+      openSignIn();
+      return;
+    }
+    openPredictor();
   };
 
+  React.useEffect(() => {
+    if (!isLoaded || !isSignedIn || !pendingPredictorAccess) return;
+    setPendingPredictorAccess(false);
+    openPredictor();
+  }, [isLoaded, isSignedIn, pendingPredictorAccess, openPredictor]);
+
+  React.useEffect(() => {
+    if (!isLoaded || isSignedIn || viewMode !== "predictor") return;
+    setViewMode("landing");
+    try { sessionStorage.setItem("clgPredictViewMode", "landing"); } catch { /* ignore */ }
+  }, [isLoaded, isSignedIn, viewMode]);
+
   useEffect(() => {
-    if (typeof window === "undefined" || viewMode === "predictor") return;
+    if (typeof window === "undefined" || viewMode === "predictor" || !isLoaded) return;
     const params = new URLSearchParams(window.location.search);
     if (params.get("view") === "predictor") {
+      if (!isSignedIn) {
+        window.history.replaceState({ ...(window.history.state || {}), predictorState: predictorStateRef.current }, "", window.location.pathname);
+        return;
+      }
       const timer = setTimeout(() => {
         const savedState = readSavedPredictorState();
         const restored = restorePredictorState(savedState);
@@ -375,7 +408,7 @@ export default function Home() {
       }, 0);
       return () => clearTimeout(timer);
     }
-  }, [readSavedPredictorState, restorePredictorState, viewMode]);
+  }, [readSavedPredictorState, restorePredictorState, viewMode, isLoaded, isSignedIn]);
   
   const scrollToSection = (sectionId: string) => {
     handleNavigateHome(sectionId);
@@ -468,53 +501,48 @@ export default function Home() {
     }
   };
 
+  const goToMyList = () => {
+    try {
+      sessionStorage.setItem("predictorState", JSON.stringify(predictorStateRef.current));
+      sessionStorage.setItem("clgPredictViewMode", viewMode);
+    } catch {
+      // Ignore storage failures in private browsing modes.
+    }
+    router.push("/my-list");
+  };
+
   const filteredResults = results;
   const totalPages = Math.ceil(totalCount / itemsPerPage);
+
+  if (!isLoaded) {
+    return (
+      <div className="flex h-screen w-screen flex-col overflow-auto bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 font-sans text-slate-900 selection:bg-amber-300/40">
+        <SiteNavbar variant="home" viewMode={viewMode} activeSection={activeSection} />
+        <div className="flex-1 pt-[73px]">
+          <AuthLoadingScreen />
+        </div>
+      </div>
+    );
+  }
  
   return (
     <div className="h-screen w-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 text-slate-900 font-sans overflow-auto selection:bg-amber-300/40 flex flex-col">
-      {/* FIXED NAVBAR */}
-      <nav className="w-full bg-white/20 backdrop-blur-xl border-b border-white/30 fixed top-0 left-0 right-0 z-50 px-6 py-4 flex justify-between items-center transition-colors duration-300">
-        <div className="flex items-center gap-2.5 cursor-pointer" onClick={() => scrollToSection("hero")}> 
-          <div className="h-9 w-9 bg-white/80 rounded-xl flex items-center justify-center shadow-md shadow-slate-500/10 border border-slate-200">
-            <GraduationCap className="h-5 w-5 text-slate-900" />
-          </div>
-          <span className="text-xl font-black tracking-tight text-slate-900">
-            Clg<span className="font-[family-name:var(--font-caveat)] text-2xl text-slate-700">Predict</span>
-          </span>
-        </div>
-        <div className="hidden md:flex items-center gap-1 bg-white/60 p-1 rounded-full border border-slate-200 backdrop-blur-sm shadow-sm">
-          {["hero", "purpose", "howToUse", "about", "contact"].map((sec) => (
-            <button key={sec} onClick={() => scrollToSection(sec)} className={`px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider transition-all duration-300 ${viewMode === "landing" && activeSection === sec ? "bg-slate-900 text-white shadow-md" : "text-slate-700 hover:text-slate-900"}`}>{sec === "hero" ? "Home" : sec === "howToUse" ? "How" : sec}</button>
-          ))}
-        </div>
-        <div className="flex items-center gap-3">
-          {isSignedIn ? (
-            <div className="flex items-center gap-4">
-              <button onClick={() => {
-                try { sessionStorage.setItem('predictorState', JSON.stringify(predictorStateRef.current)); } catch (e) { }
-                router.push('/my-list');
-              }} className="hidden md:flex items-center gap-2 text-sm font-bold text-slate-900 hover:text-slate-700 transition-colors">
-                <Bookmark className="h-4 w-4" /> My List
-                {bookmarks.length > 0 && (
-                  <span className="bg-amber-400 text-slate-900 text-[10px] px-1.5 py-0.5 rounded-full font-bold">{bookmarks.length}</span>
-                )}
-              </button>
-              <UserButton appearance={{ elements: { avatarBox: "w-9 h-9 ring-2 ring-slate-300/80" } }} />
-            </div>
-          ) : (
-            <SignInButton mode="modal">
-              <button className="text-xs font-bold py-2.5 px-5 rounded-xl bg-slate-900 text-white hover:bg-slate-800 transition-all tracking-wide shadow-lg shadow-slate-900/10">
-              </button>
-            </SignInButton>
-          )}
-        </div>
-      </nav>
+      <SiteNavbar
+        variant="home"
+        viewMode={viewMode}
+        activeSection={activeSection}
+        onNavigateSection={scrollToSection}
+        onOpenPredictor={handleStartPredicting}
+        onGoHome={() => scrollToSection("hero")}
+        onGoMyList={goToMyList}
+      />
  
       {/* MAIN CONTAINER */}
       <div className="flex-1 flex flex-col pt-[73px] min-h-0 relative">
+        <AnimatePresence mode="wait">
         {viewMode === "landing" && (
-          <div className="w-full flex-1 overflow-y-auto custom-scrollbar relative bg-gradient-to-b from-slate-50 via-blue-50 to-indigo-50 snap-y snap-mandatory scroll-smooth">
+          <ViewTransition viewKey="landing" className="w-full flex-1">
+          <div className="w-full flex-1 overflow-y-auto custom-scrollbar relative bg-gradient-to-b from-slate-50 via-blue-50 to-indigo-50 snap-y snap-mandatory scroll-smooth min-h-[calc(100vh-73px)]">
               <div className="fixed inset-0 pointer-events-none z-0">
                 <div className="w-full h-full bg-cover bg-center bg-no-repeat bg-fixed opacity-72 blur-[2px] scale-[1.02]" style={{ backgroundImage: "url('/college.jpg')" }} />
                 <div className="absolute inset-0 bg-gradient-to-b from-white/25 via-blue-50/35 to-slate-50/80" />
@@ -677,11 +705,13 @@ export default function Home() {
               </div>
             </section>
           </div>
+          </ViewTransition>
         )}
  
         {/* DASHBOARD PREDICTOR CORE WITH HOVER EXPANDABLE SIDEBAR */}
-        {viewMode === "predictor" && (
-          !isAllowed ? (
+        {viewMode === "predictor" && isSignedIn && (
+          <ViewTransition viewKey="predictor" className="flex min-h-0 flex-1 flex-col">
+          {!isAllowed ? (
             <div className="flex-1 flex items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 p-6">
               <div className="max-w-md w-full bg-white border border-red-200 rounded-3xl p-8 text-center shadow-lg relative overflow-hidden">
                 <div className="absolute top-0 right-0 w-32 h-32 bg-red-100/30 rounded-full blur-3xl pointer-events-none" />
@@ -1046,8 +1076,10 @@ export default function Home() {
               </div>
             </main>
           </div>
-          )
+          )}
+          </ViewTransition>
         )}
+        </AnimatePresence>
       </div>
     </div>
   );
