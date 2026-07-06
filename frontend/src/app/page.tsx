@@ -285,10 +285,7 @@ export default function Home() {
     if (typeof window === "undefined") return;
 
     const params = new URLSearchParams(window.location.search);
-    const savedViewMode = (() => {
-      try { return sessionStorage.getItem("clgPredictViewMode"); } catch { return null; }
-    })();
-    const shouldOpenPredictor = params.get("view") === "predictor" || savedViewMode === "predictor";
+    const shouldOpenPredictor = params.get("view") === "predictor";
     const savedState = readSavedPredictorState();
 
     const restored = restorePredictorState(savedState);
@@ -476,82 +473,6 @@ export default function Home() {
  
   return (
     <div className="h-screen w-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 text-slate-900 font-sans overflow-auto selection:bg-amber-300/40 flex flex-col">
-      <style jsx global>{`
-        @import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400;700&family=Fredoka:wght@400;600&family=Marker+Felt&display=swap');
-        @keyframes pulseGlow { 0%, 100% { opacity: 0.08; } 50% { opacity: 0.15; } }
-        @keyframes wiggle { 0%, 100% { transform: rotate(-1deg); } 50% { transform: rotate(1deg); } }
-        @keyframes float { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-4px); } }
-        @keyframes markerSweep { 0% { background-size: 0% 55%; } 100% { background-size: 100% 55%; } }
-        @keyframes stripWave { 0%, 100% { transform: translateX(0) rotate(var(--tilt, 0deg)); } 50% { transform: translateX(10px) rotate(calc(var(--tilt, 0deg) * -1)); } }
-        @keyframes stripReveal { 0% { background-position: 100% 70%; } 100% { background-position: 0 70%; } }
-        @keyframes contactPulse { 0%, 100% { box-shadow: 0 24px 70px rgba(30, 64, 175, .22); } 50% { box-shadow: 0 30px 90px rgba(245, 158, 11, .28); } }
-        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: #f8fafc; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 9999px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
-        .handwritten { font-family: 'Caveat', 'Fredoka', cursive; font-weight: 700; }
-        .marker-style { font-family: 'Marker Felt', cursive; letter-spacing: 0.5px; }
-        .sticky-note { 
-          position: relative; 
-          background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
-          box-shadow: -2px 2px 8px rgba(0,0,0,0.1), 0 0 20px rgba(251,191,36,0.3);
-          transform: rotate(-2deg);
-          border-left: 4px solid #f59e0b;
-        }
-        .sticky-note:nth-child(even) { transform: rotate(1deg); }
-        .sticky-note:nth-child(3n) { background: linear-gradient(135deg, #fce7f3 0%, #fbcfe8 100%); border-left-color: #ec4899; }
-        .sticky-note:nth-child(5n) { background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%); border-left-color: #3b82f6; }
-        .highlight-yellow { background: linear-gradient(120deg, transparent 0%, rgba(251,191,36,0.5) 0%, rgba(251,191,36,0.5) 100%, transparent 100%); }
-        .highlight-pink { background: linear-gradient(120deg, transparent 0%, rgba(244,114,182,0.4) 0%, rgba(244,114,182,0.4) 100%, transparent 100%); }
-        .highlight-blue { background: linear-gradient(120deg, transparent 0%, rgba(96,165,250,0.4) 0%, rgba(96,165,250,0.4) 100%, transparent 100%); }
-        .highlight-sweep {
-          background-image: linear-gradient(100deg, rgba(253, 224, 71, 0.1), rgba(253, 224, 71, 0.85) 45%, rgba(253, 224, 71, 0.35));
-          background-repeat: no-repeat;
-          background-position: 0 70%;
-          background-size: 0% 55%;
-        }
-        .scroll-pop.opacity-100 .highlight-sweep,
-        .highlight-sweep.is-on {
-          animation: markerSweep 1s ease-out forwards;
-        }
-        .open-notebook {
-          border-radius: 28px 34px 30px 26px;
-          background:
-            linear-gradient(90deg, transparent calc(50% - 1px), rgba(148,163,184,.35) calc(50% - 1px), rgba(148,163,184,.35) calc(50% + 1px), transparent calc(50% + 1px)),
-            radial-gradient(circle at 0 0, rgba(15,23,42,.08), transparent 18%),
-            radial-gradient(circle at 100% 0, rgba(15,23,42,.08), transparent 18%),
-            radial-gradient(circle at 0 100%, rgba(15,23,42,.08), transparent 18%),
-            radial-gradient(circle at 100% 100%, rgba(15,23,42,.08), transparent 18%),
-            repeating-linear-gradient(0deg, rgba(255,255,255,.98) 0 31px, rgba(219,234,254,.85) 32px);
-        }
-        .purpose-card { transform: translateY(var(--lift, 0px)) rotate(var(--tilt)); }
-        .purpose-card:hover { transform: translateY(-24px) rotate(0deg) scale(1.06); z-index: 10; box-shadow: 0 24px 55px rgba(15, 23, 42, .22), 0 0 0 3px rgba(255,255,255,.9) inset; }
-        .purpose-card::after {
-          content: "";
-          position: absolute;
-          inset: auto 18px 12px 18px;
-          height: 12px;
-          border-radius: 999px;
-          background: rgba(15,23,42,.12);
-          filter: blur(9px);
-          opacity: .55;
-          transition: opacity .25s ease;
-        }
-        .purpose-card:hover::after { opacity: .85; }
-        .note-title { transform: rotate(-1.5deg); }
-        .work-strip { --tilt: 0deg; animation: stripWave 5s ease-in-out infinite; animation-delay: var(--delay, 0s); }
-        .work-strip.opacity-100 {
-          background-image: linear-gradient(100deg, rgba(253,224,71,.24), rgba(253,224,71,.72) 38%, rgba(255,255,255,.92) 39%);
-          background-size: 220% 100%;
-          animation: stripWave 5s ease-in-out infinite, stripReveal 1.1s ease-out both;
-          animation-delay: var(--delay, 0s), var(--delay, 0s);
-        }
-        .contact-pop { animation: contactPulse 3.8s ease-in-out infinite; }
-        .pencil-underline { position: relative; padding-bottom: 2px; border-bottom: 2px dashed #d4a574; }
-        .diary-entry { background: linear-gradient(to right, #f5f3f0 1px, transparent 1px); background-size: 2px 20px; background-position: 0 0; background-repeat: repeat-y; }
-        .college-card-sketch { border: 2px solid #8b7355; border-radius: 8px; box-shadow: 3px 3px 0px rgba(139, 115, 85, 0.2); }
-      `}</style>
- 
       {/* FIXED NAVBAR */}
       <nav className="w-full bg-white/20 backdrop-blur-xl border-b border-white/30 fixed top-0 left-0 right-0 z-50 px-6 py-4 flex justify-between items-center transition-colors duration-300">
         <div className="flex items-center gap-2.5 cursor-pointer" onClick={() => scrollToSection("hero")}> 
