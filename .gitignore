@@ -1,0 +1,36 @@
+# dependencies
+node_modules/
+frontend/node_modules/
+
+# virtual environments
+.venv/
+.venv-1/
+env/
+venv/
+
+# build outputs
+.next/
+frontend/.next/
+out/
+build/
+
+# caches
+__pycache__/
+*.py[cod]
+.pytest_cache/
+*.tsbuildinfo
+
+# environment files
+.env
+.env.*
+!.env.example
+
+# local/generated source data and bulky artifacts
+*.pdf
+*.xlsx
+cleaned_mht_cet_cutoffs.xlsx
+
+# logs and OS files
+*.log
+.DS_Store
+Thumbs.db

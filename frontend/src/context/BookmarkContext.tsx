@@ -1,7 +1,8 @@
 "use client";
 
-import React, { createContext, useContext, useState, useEffect, ReactNode, useRef } from "react";
+import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { useAuth } from "@clerk/nextjs";
+import { getBackendBaseUrl } from "@/lib/api";
 
 export type BookmarkItem = {
   id: string;
@@ -10,7 +11,7 @@ export type BookmarkItem = {
   seat_type: string;
   cap_round: string;
   cutoff_percentile: number;
-  [key: string]: any;
+  [key: string]: string | number | undefined;
 };
 
 interface BookmarkContextType {
@@ -18,7 +19,7 @@ interface BookmarkContextType {
   addBookmark: (item: BookmarkItem) => Promise<void>;
   removeBookmark: (id: string) => Promise<void>;
   reorderBookmarks: (newBookmarks: BookmarkItem[]) => Promise<void>;
-  isBookmarked: (choiceCode: string, seatType: string, capRound: string) => boolean;
+  isBookmarked: (choiceCode: string, seatType: string, capRound: string, quotaAllocation?: string) => boolean;
   loading: boolean;
 }
 
@@ -28,30 +29,11 @@ export const BookmarkProvider = ({ children }: { children: ReactNode }) => {
   const { userId, isLoaded, isSignedIn } = useAuth();
   const [bookmarks, setBookmarks] = useState<BookmarkItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const backendUrlRef = useRef<string>("https://mht-cet-predictor-f8dl.onrender.com");
 
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      const hostname = window.location.hostname;
-      if (hostname === "localhost" || hostname === "127.0.0.1" || hostname.startsWith("192.168.")) {
-        backendUrlRef.current = "http://localhost:8001";
-      }
-    }
-  }, []);
-
-  useEffect(() => {
-    if (isLoaded && isSignedIn && userId) {
-      fetchBookmarks();
-    } else {
-      setBookmarks([]);
-      setLoading(false);
-    }
-  }, [isLoaded, isSignedIn, userId]);
-
-  const fetchBookmarks = async () => {
+  const fetchBookmarks = React.useCallback(async () => {
     try {
       setLoading(true);
-      const res = await fetch(`${backendUrlRef.current}/bookmarks/${userId}`);
+      const res = await fetch(`${getBackendBaseUrl()}/bookmarks/${userId}`);
       const data = await res.json();
       if (data.status === "success") {
         setBookmarks(data.bookmarks || []);
@@ -61,15 +43,28 @@ export const BookmarkProvider = ({ children }: { children: ReactNode }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [userId]);
+
+  useEffect(() => {
+    if (isLoaded && isSignedIn && userId) {
+      setTimeout(() => {
+        void fetchBookmarks();
+      }, 0);
+    } else {
+      setTimeout(() => {
+        setBookmarks([]);
+        setLoading(false);
+      }, 0);
+    }
+  }, [fetchBookmarks, isLoaded, isSignedIn, userId]);
 
   const addBookmark = async (item: BookmarkItem) => {
     if (!userId) return;
     try {
       // Optimistic update
-      setBookmarks((prev) => [...prev, item]);
+      setBookmarks((prev) => [item, ...prev]);
       
-      const res = await fetch(`${backendUrlRef.current}/bookmarks/add`, {
+      const res = await fetch(`${getBackendBaseUrl()}/bookmarks/add`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ user_id: userId, bookmark: item }),
@@ -105,7 +100,7 @@ export const BookmarkProvider = ({ children }: { children: ReactNode }) => {
       const original = [...bookmarks];
       setBookmarks((prev) => prev.filter((b) => b.id !== id));
       
-      const res = await fetch(`${backendUrlRef.current}/bookmarks/remove`, {
+      const res = await fetch(`${getBackendBaseUrl()}/bookmarks/remove`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ user_id: userId, bookmark_id: id }),
@@ -124,7 +119,7 @@ export const BookmarkProvider = ({ children }: { children: ReactNode }) => {
     try {
       setBookmarks(newBookmarks);
       
-      await fetch(`${backendUrlRef.current}/bookmarks/reorder`, {
+      await fetch(`${getBackendBaseUrl()}/bookmarks/reorder`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ user_id: userId, bookmarks: newBookmarks }),
@@ -134,8 +129,14 @@ export const BookmarkProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  const isBookmarked = (choiceCode: string, seatType: string, capRound: string) => {
-    return bookmarks.some(b => b.choice_code === choiceCode && b.seat_type === seatType && b.cap_round === capRound);
+  const isBookmarked = (choiceCode: string, seatType: string, capRound: string, quotaAllocation?: string) => {
+    return bookmarks.some(
+      b =>
+        b.choice_code === choiceCode &&
+        b.seat_type === seatType &&
+        b.cap_round === capRound &&
+        b.quota_allocation === quotaAllocation
+    );
   };
 
   return (
