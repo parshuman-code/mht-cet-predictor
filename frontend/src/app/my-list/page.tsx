@@ -138,7 +138,7 @@ export default function MyListPage() {
   const bookmarkIds = useMemo(() => bookmarks.map((bookmark) => bookmark.id), [bookmarks]);
 
   const goToPredictor = () => {
-    router.push("/?view=predictor");
+    router.push("/predictor");
   };
 
   const handleDragEnd = (event: DragEndEvent) => {
@@ -262,13 +262,13 @@ export default function MyListPage() {
   };
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 text-slate-900">
+    <div className="relative min-h-screen overflow-x-hidden overflow-y-auto bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 text-slate-900">
       <SiteNavbar variant="subpage" onOpenPredictor={goToPredictor} />
       <AuthGate
         title="Sign in to view your list"
         description="Your saved colleges stay linked to your account. Sign in or create a free account to open your preference diary."
       >
-        <PageTransition className="px-4 pb-10 pt-[97px]">
+        <div className="px-4 pb-10 pt-[97px]">
           <main className="relative mx-auto max-w-6xl overflow-visible rounded-lg border border-slate-300 bg-white/95 pl-8 shadow-2xl shadow-slate-900/10 md:pl-14">
         <div className="pointer-events-none absolute inset-y-0 left-0 hidden w-14 border-r border-blue-100 bg-blue-50/60 md:block">
           {Array.from({ length: 14 }).map((_, index) => (
@@ -353,7 +353,7 @@ export default function MyListPage() {
           )}
         </section>
           </main>
-        </PageTransition>
+        </div>
       </AuthGate>
     </div>
   );

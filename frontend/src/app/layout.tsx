@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { ClerkProvider } from "@clerk/nextjs";
-import { BookmarkProvider } from "@/context/BookmarkContext";
-import { AuthRedirectHandler } from "@/components/AuthRedirectHandler";
+import { ClientLayout } from "@/components/ClientLayout";
 
 export const metadata: Metadata = {
   title: "ClgPredict — MHT-CET College Predictor",
@@ -21,12 +20,11 @@ export default function RootLayout({
       signUpFallbackRedirectUrl="/"
       afterSignOutUrl="/"
     >
-      <html lang="en" className="h-full antialiased">
-        <body className="min-h-full flex flex-col">
-          <BookmarkProvider>
-            <AuthRedirectHandler />
+      <html lang="en" className="h-screen w-screen overflow-hidden antialiased">
+        <body className="h-screen w-screen flex flex-col overflow-hidden">
+          <ClientLayout>
             {children}
-          </BookmarkProvider>
+          </ClientLayout>
         </body>
       </html>
     </ClerkProvider>

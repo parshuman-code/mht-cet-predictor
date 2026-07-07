@@ -23,12 +23,78 @@
   }
 }
 
+/* ─── SMOOTH SCROLL & PERFORMANCE ─── */
+html {
+  scroll-behavior: smooth;
+  /* Hide scrollbars but keep scrolling functionality */
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;     /* Firefox */
+  height: 100%;
+  width: 100%;
+  overflow-x: hidden;
+  overflow-y: scroll;
+}
+
+/* Hide scrollbars for Webkit browsers (Chrome, Safari, Edge) */
+html::-webkit-scrollbar {
+  display: none;
+}
+
+body::-webkit-scrollbar {
+  display: none;
+}
+
+/* Reduce motion for users who prefer it */
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+  /* Prevent content from jumping on page transitions */
+  height: 100%;
+  width: 100%;
+  overflow-x: hidden;
+  margin: 0;
+  padding: 0;
+  /* GPU-accelerated rendering for smoother scrolling */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
+/* ─── SCROLL PERFORMANCE OPTIMIZATIONS ─── */
+
+/* Optimize all scrollable containers for 60fps scrolling */
+.custom-scrollbar,
+[class*="overflow-y-auto"],
+[class*="overflow-auto"] {
+  -webkit-overflow-scrolling: touch;
+  will-change: scroll-position;
+  scroll-behavior: smooth;
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;     /* Firefox */
+}
+
+/* Hide scrollbars for Webkit browsers */
+.custom-scrollbar::-webkit-scrollbar,
+[class*="overflow-y-auto"]::-webkit-scrollbar,
+[class*="overflow-auto"]::-webkit-scrollbar {
+  display: none;
+}
+
+/* ─── CUSTOM SCROLLBAR ─── */
+/* Scrollbars are now hidden for a clean look */
+
+/* ─── ANIMATIONS ─── */
+/* Disable animations on reduced motion, optimize GPU rendering */
 @keyframes pulseGlow { 0%, 100% { opacity: 0.08; } 50% { opacity: 0.15; } }
 @keyframes wiggle { 0%, 100% { transform: rotate(-1deg); } 50% { transform: rotate(1deg); } }
 @keyframes float { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-4px); } }
@@ -37,10 +103,50 @@ body {
 @keyframes stripReveal { 0% { background-position: 100% 70%; } 100% { background-position: 0 70%; } }
 @keyframes contactPulse { 0%, 100% { box-shadow: 0 24px 70px rgba(30, 64, 175, .22); } 50% { box-shadow: 0 30px 90px rgba(245, 158, 11, .28); } }
 
-.custom-scrollbar::-webkit-scrollbar { width: 6px; }
-.custom-scrollbar::-webkit-scrollbar-track { background: #f8fafc; }
-.custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 9999px; }
-.custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+/* Smooth fade-in animation for elements */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeInScale {
+  from { opacity: 0; transform: scale(0.97); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.3s ease-out both;
+}
+
+.animate-fadeInScale {
+  animation: fadeInScale 0.35s ease-out both;
+}
+
+/* ─── PERFORMANCE OPTIMIZATIONS ─── */
+/* Use CSS containment to improve paint performance */
+.scroll-pop {
+  will-change: transform, opacity;
+  contain: layout style paint;
+  transition: transform 0.7s cubic-bezier(0.22, 1, 0.36, 1),
+              opacity 0.7s ease-out !important;
+}
+
+.purpose-card {
+  will-change: transform;
+  contain: layout style paint;
+}
+
+.work-strip {
+  will-change: transform;
+  contain: layout style paint;
+}
+
+.contact-pop {
+  will-change: box-shadow;
+  contain: layout style paint;
+}
+
+/* ─── TYPOGRAPHY & DECORATIVE ─── */
 .handwritten { font-family: 'Caveat', 'Fredoka', cursive; font-weight: 700; }
 .marker-style { font-family: 'Caveat', 'Fredoka', cursive; letter-spacing: 0; }
 .sticky-note {
@@ -103,11 +209,47 @@ body {
 .diary-entry { background: linear-gradient(to right, #f5f3f0 1px, transparent 1px); background-size: 2px 20px; background-position: 0 0; background-repeat: repeat-y; }
 .college-card-sketch { border: 2px solid #8b7355; border-radius: 8px; box-shadow: 3px 3px 0px rgba(139, 115, 85, 0.2); }
 
-html {
-  scroll-behavior: smooth;
+/* ─── SMOOTH TRANSITIONS FOR INTERACTIVE ELEMENTS ─── */
+
+/* All transitions should feel smooth, not instant */
+.purpose-card,
+.work-strip,
+.sticky-note,
+.college-card-sketch {
+  transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1),
+              box-shadow 0.4s cubic-bezier(0.22, 1, 0.36, 1),
+              opacity 0.7s ease-out;
 }
 
+/* Scroll-reveal elements get smooth GPU-accelerated transforms */
+.scroll-pop {
+  will-change: transform, opacity;
+  transition: transform 0.7s cubic-bezier(0.22, 1, 0.36, 1),
+              opacity 0.7s ease-out !important;
+}
+
+/* ─── PAGE SHELL ─── */
 .page-shell {
-  min-height: 100vh;
+  height: 100%;
+  width: 100%;
   background: linear-gradient(135deg, #f8fafc 0%, #eff6ff 50%, #eef2ff 100%);
+  overflow: hidden;
+  position: relative;
+}
+
+/* Fixed background image for entire viewport */
+.fixed-bg {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-attachment: fixed;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  opacity: 0.72;
+  filter: blur(2px);
+  z-index: 0;
+  pointer-events: none;
 }

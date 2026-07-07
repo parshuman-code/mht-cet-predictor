@@ -76,7 +76,7 @@ export function SiteNavbar({
       onOpenPredictor();
       return;
     }
-    router.push("/?view=predictor");
+    router.push("/predictor");
   };
 
   const goHome = () => {
@@ -124,8 +124,8 @@ export function SiteNavbar({
           <button
             type="button"
             onClick={goHome}
-            className={`rounded-full px-4 py-1.5 text-xs font-bold uppercase tracking-wider transition-all ${
-              pathname === "/" ? "bg-slate-900 text-white shadow-md" : "text-slate-700 hover:text-slate-900"
+            className={`rounded-full px-4 py-1.5 text-xs font-bold uppercase tracking-wider transition-all duration-300 ease-out ${
+              pathname === "/" ? "bg-slate-900 text-white shadow-md scale-[1.02]" : "text-slate-700 hover:text-slate-900 hover:bg-slate-100/60"
             }`}
           >
             Home
@@ -133,14 +133,15 @@ export function SiteNavbar({
           <button
             type="button"
             onClick={goToPredictor}
-            className="rounded-full px-4 py-1.5 text-xs font-bold uppercase tracking-wider text-slate-700 transition-all hover:text-slate-900"
+            className="rounded-full px-4 py-1.5 text-xs font-bold uppercase tracking-wider text-slate-700 transition-all duration-300 ease-out hover:text-slate-900 hover:bg-slate-100/60"
           >
             Predictor
           </button>
           <Link
             href="/my-list"
-            className={`rounded-full px-4 py-1.5 text-xs font-bold uppercase tracking-wider transition-all ${
-              pathname === "/my-list" ? "bg-slate-900 text-white shadow-md" : "text-slate-700 hover:text-slate-900"
+            prefetch={true}
+            className={`rounded-full px-4 py-1.5 text-xs font-bold uppercase tracking-wider transition-all duration-300 ease-out ${
+              pathname === "/my-list" ? "bg-slate-900 text-white shadow-md scale-[1.02]" : "text-slate-700 hover:text-slate-900 hover:bg-slate-100/60"
             }`}
           >
             My List
