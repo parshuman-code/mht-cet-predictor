@@ -778,9 +778,12 @@ export default function PredictorPage() {
                   </div>
                 ) : (
                   <>
-                    <div className="grid grid-cols-1 gap-4 mb-6 sm:grid-cols-2 xl:grid-cols-[repeat(auto-fit,minmax(320px,1fr))]">
+                    <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-[repeat(auto-fit,minmax(320px,1fr))]">
                       {filteredResults.map((item, index) => (
-                        <div key={`${item.choice_code}-${index}`} className="college-card-sketch bg-white p-5 transition-all flex flex-col justify-between hover:shadow-lg hover:scale-105 relative overflow-hidden group">
+                        <div
+                          key={`${item.choice_code}-${index}`}
+                          className={`college-card-sketch bg-white p-5 transition-all flex flex-col justify-between hover:shadow-lg hover:scale-105 relative overflow-hidden group ${filteredResults.length % 2 !== 0 && index === filteredResults.length - 1 ? "sm:col-span-2" : ""}`}
+                        >
                           {/* Diary line background effect */}
                           <div className="absolute inset-0 opacity-5 pointer-events-none" style={{ backgroundImage: 'repeating-linear-gradient(0deg, transparent, transparent 19px, #1e40af 19px, #1e40af 20px)' }} />
                           

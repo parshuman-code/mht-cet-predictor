@@ -338,7 +338,7 @@ export default function MyListPage() {
           ) : (
             <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
               <SortableContext items={bookmarkIds} strategy={verticalListSortingStrategy}>
-                <div className="overflow-hidden rounded-lg border border-blue-200 bg-white/70">
+                <div className="max-h-[calc(100vh-320px)] overflow-y-auto rounded-lg border border-blue-200 bg-white/70">
                   {bookmarks.map((bookmark, index) => (
                     <SortableBookmarkRow
                       key={bookmark.id}
