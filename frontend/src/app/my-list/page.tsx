@@ -12,6 +12,7 @@ import {
   DndContext,
   DragEndEvent,
   PointerSensor,
+  TouchSensor,
   useSensor,
   useSensors,
 } from "@dnd-kit/core";
@@ -52,12 +53,12 @@ function SortableBookmarkRow({
     <div
       ref={setNodeRef}
       style={style}
-      className={`group relative flex items-stretch gap-3 border-b border-dashed border-blue-200 bg-white/80 px-4 py-3 shadow-sm transition ${
+      className={`group relative flex items-stretch gap-2 sm:gap-3 border-b border-dashed border-blue-200 bg-white/80 px-2 py-2 sm:px-4 sm:py-3 shadow-sm transition ${
         isDragging ? "z-20 scale-[1.01] shadow-2xl" : "hover:bg-yellow-50"
       }`}
     >
-      <div className="flex w-12 shrink-0 items-center justify-center border-r border-blue-100 pr-3">
-        <span className="font-[family-name:var(--font-caveat)] text-3xl font-black text-slate-900">
+      <div className="flex w-8 sm:w-12 shrink-0 items-center justify-center border-r border-blue-100 pr-1 sm:pr-3">
+        <span className="font-[family-name:var(--font-caveat)] text-xl sm:text-3xl font-black text-slate-900">
           {index + 1}
         </span>
       </div>
@@ -75,31 +76,31 @@ function SortableBookmarkRow({
       <div className="min-w-0 flex-1">
         <div className="flex flex-col gap-2 lg:flex-row lg:items-start lg:justify-between">
           <div className="min-w-0">
-            <div className="text-[10px] font-black uppercase tracking-[0.28em] text-slate-500">
+            <div className="hidden sm:block text-[10px] font-black uppercase tracking-[0.28em] text-slate-500">
               Preference {index + 1}
             </div>
-            <h2 className="mt-1 truncate font-[family-name:var(--font-caveat)] text-2xl font-black leading-tight text-black">
+            <h2 className="mt-0 sm:mt-1 truncate font-[family-name:var(--font-caveat)] text-xl sm:text-2xl font-black leading-tight text-black">
               {bookmark.college_name}
             </h2>
-            <p className="mt-1 truncate text-xs font-semibold text-slate-700">
+            <p className="mt-0.5 sm:mt-1 truncate text-[10px] sm:text-xs font-semibold text-slate-700">
               {formatValue(bookmark.branch_name)}
             </p>
           </div>
 
-          <div className="flex shrink-0 flex-wrap gap-2 text-[11px] font-bold">
-            <span className="rounded-full bg-blue-50 px-3 py-1 text-blue-900 ring-1 ring-blue-200">
+          <div className="flex shrink-0 flex-wrap gap-1.5 sm:gap-2 text-[9px] sm:text-[11px] font-bold">
+            <span className="rounded-full bg-blue-50 px-2 sm:px-3 py-0.5 sm:py-1 text-blue-900 ring-1 ring-blue-200">
               {formatValue(bookmark.cap_round)}
             </span>
-            <span className="rounded-full bg-green-50 px-3 py-1 text-green-900 ring-1 ring-green-200">
+            <span className="rounded-full bg-green-50 px-2 sm:px-3 py-0.5 sm:py-1 text-green-900 ring-1 ring-green-200">
               {formatValue(bookmark.seat_type)}
             </span>
-            <span className="rounded-full bg-slate-100 px-3 py-1 text-slate-900 ring-1 ring-slate-300">
+            <span className="rounded-full bg-slate-100 px-2 sm:px-3 py-0.5 sm:py-1 text-slate-900 ring-1 ring-slate-300">
               {formatValue(bookmark.quota_allocation)}
             </span>
           </div>
         </div>
 
-        <div className="mt-3 grid gap-2 text-xs text-slate-700 sm:grid-cols-4">
+        <div className="mt-2 sm:mt-3 grid grid-cols-2 gap-1.5 sm:gap-2 text-[10px] sm:text-xs text-slate-700 sm:grid-cols-4">
           <div>
             <span className="font-black text-slate-500">Choice</span>
             <div className="font-mono text-slate-900">{formatValue(bookmark.choice_code)}</div>
@@ -134,7 +135,10 @@ function SortableBookmarkRow({
 export default function MyListPage() {
   const { bookmarks, removeBookmark, reorderBookmarks, loading } = useBookmarks();
   const router = useRouter();
-  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 250, tolerance: 5 } })
+  );
   const bookmarkIds = useMemo(() => bookmarks.map((bookmark) => bookmark.id), [bookmarks]);
 
   const goToPredictor = () => {
