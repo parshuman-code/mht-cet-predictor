@@ -542,9 +542,10 @@ export default function PredictorPage() {
             <aside 
               onMouseEnter={() => setIsSidebarExpanded(true)}
               onMouseLeave={() => setIsSidebarExpanded(false)}
-              className={`flex flex-col p-4 shrink-0 shadow-lg overflow-y-auto custom-scrollbar transition-all duration-300 ease-in-out bg-gradient-to-b from-blue-50 to-indigo-50 border-blue-200/60
-                md:relative md:h-full md:border-r ${isSidebarExpanded ? 'md:w-80' : 'md:w-20'} md:translate-y-0
-                fixed inset-x-0 bottom-0 z-50 w-full h-[85vh] rounded-t-3xl border-t shadow-[0_-10px_40px_rgba(0,0,0,0.2)] md:rounded-none md:shadow-lg ${isMobileFilterOpen ? 'translate-y-0' : 'translate-y-[100%]'}
+              className={`flex flex-col p-4 shrink-0 overflow-y-auto custom-scrollbar transition-all duration-300 ease-in-out bg-gradient-to-b from-blue-50 to-indigo-50 border-blue-200/60
+                md:relative md:h-full md:border-r ${isSidebarExpanded ? 'md:w-80' : 'md:w-20'} md:translate-y-0 md:scale-100 md:opacity-100 md:visible md:pointer-events-auto md:inset-auto md:rounded-none md:shadow-lg
+                fixed inset-x-4 top-1/2 -translate-y-1/2 z-50 max-h-[85vh] rounded-2xl border shadow-2xl
+                ${isMobileFilterOpen ? 'scale-100 opacity-100 visible pointer-events-auto' : 'scale-95 opacity-0 invisible pointer-events-none'}
               `}
             >
               <div className={`flex items-center gap-2 mb-6 pb-4 border-b-2 border-dashed border-amber-400 ${isSidebarExpanded ? 'justify-between md:justify-start px-2' : 'justify-center'}`}>
@@ -671,16 +672,16 @@ export default function PredictorPage() {
                       onClick={() => {
                         handleResetAll();
                       }}
-                      className="absolute right-12 top-1 bottom-1 px-2 bg-yellow-200 hover:bg-yellow-300 text-blue-900 rounded text-[10px] font-black transition-colors border-2 border-amber-400"
+                      className="absolute right-12 sm:right-16 top-1 bottom-1 px-1.5 sm:px-2 bg-yellow-200 hover:bg-yellow-300 text-blue-900 rounded text-[10px] font-black transition-colors border-2 border-amber-400 flex items-center justify-center"
                     >
-                      ⟲ CLEAR
+                      ⟲ <span className="hidden sm:inline ml-1">CLEAR</span>
                     </button>
                     <button 
                       onClick={() => {
                         handleSearchSubmit(branchSearch);
                         setShowRecent(false);
                       }}
-                      className="absolute right-1 top-1 bottom-1 px-2 bg-blue-700 hover:bg-blue-600 text-white rounded text-[10px] font-black transition-colors border-2 border-blue-600"
+                      className="absolute right-1 top-1 bottom-1 px-2 sm:px-3 bg-blue-700 hover:bg-blue-600 text-white rounded text-[10px] font-black transition-colors border-2 border-blue-600"
                     >
                       GO 🚀
                     </button>
@@ -709,7 +710,7 @@ export default function PredictorPage() {
                     )}
                   </div>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex flex-wrap items-center gap-3">
                   <div className="text-xs sticky-note border-2 border-blue-300 px-3 py-2 rounded-lg font-black text-blue-900 whitespace-nowrap handwritten">
                     📚 {totalCount} Colleges
                   </div>
@@ -752,7 +753,7 @@ export default function PredictorPage() {
                 {hasPredicted && results.length > 0 && !loading && (
                   <button
                     onClick={handleScrollToggle}
-                    className="fixed right-6 bottom-6 z-40 inline-flex items-center justify-center gap-2 rounded-full bg-slate-900/95 text-white h-12 w-40 text-xs font-bold shadow-2xl shadow-slate-900/20 hover:bg-slate-800 transition-all duration-300 overflow-hidden"
+                    className="fixed right-6 bottom-6 z-40 inline-flex items-center justify-center gap-2 rounded-full bg-slate-900/95 text-white h-12 w-12 sm:w-40 text-xs font-bold shadow-2xl shadow-slate-900/20 hover:bg-slate-800 transition-all duration-300 overflow-hidden"
                   >
                     <AnimatePresence mode="wait" initial={false}>
                       {isAtBottom ? (
@@ -764,8 +765,8 @@ export default function PredictorPage() {
                           transition={{ duration: 0.2 }}
                           className="flex items-center gap-2"
                         >
-                          Scroll to Top
-                          <ArrowUp className="h-4 w-4" />
+                          <span className="hidden sm:inline">Scroll to Top</span>
+                          <ArrowUp className="h-5 w-5 sm:h-4 sm:w-4" />
                         </motion.div>
                       ) : (
                         <motion.div
@@ -776,8 +777,8 @@ export default function PredictorPage() {
                           transition={{ duration: 0.2 }}
                           className="flex items-center gap-2"
                         >
-                          Scroll to Bottom
-                          <ArrowDownNarrowWide className="h-4 w-4" />
+                          <span className="hidden sm:inline">Scroll to Bottom</span>
+                          <ArrowDownNarrowWide className="h-5 w-5 sm:h-4 sm:w-4" />
                         </motion.div>
                       )}
                     </AnimatePresence>
