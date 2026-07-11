@@ -20,8 +20,8 @@ export default function RootLayout({
       signUpFallbackRedirectUrl="/"
       afterSignOutUrl="/"
     >
-      <html lang="en" className="h-screen w-screen overflow-hidden antialiased">
-        <body className="h-screen w-screen flex flex-col overflow-hidden">
+      <html lang="en" className="h-screen w-screen antialiased">
+        <body className="h-screen w-screen flex flex-col">
           <ClientLayout>
             {children}
           </ClientLayout>

@@ -68,6 +68,10 @@ body {
   /* GPU-accelerated rendering for smoother scrolling */
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+
+  /* Mobile optimizations */
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
 }
 
 /* ─── SCROLL PERFORMANCE OPTIMIZATIONS ─── */

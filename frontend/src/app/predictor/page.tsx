@@ -9,7 +9,7 @@ import { AuthGate } from "@/components/AuthGate";
 import {
   Search, SlidersHorizontal, GraduationCap, MapPin, Award, ChevronLeft, ChevronRight,
   ArrowDownNarrowWide, Mail, Phone, Info, Cpu, Database, Sparkles, Layers,
-  ListOrdered, CheckCircle2, ArrowRight, PanelLeftClose, PanelLeft, Bookmark, BookmarkCheck, List
+  ListOrdered, CheckCircle2, ArrowRight, PanelLeftClose, PanelLeft, Bookmark, BookmarkCheck, List, X
 } from "lucide-react";
 import { ArrowUp } from "lucide-react";
 import Link from "next/link";
@@ -56,6 +56,7 @@ export default function PredictorPage() {
  
   // Sidebar Hover/Toggle States
   const [isSidebarExpanded, setIsSidebarExpanded] = useState<boolean>(false);
+  const [isMobileFilterOpen, setIsMobileFilterOpen] = useState<boolean>(false);
  
   // Predictor parameters
   const [percentile, setPercentile] = useState<string>("");
@@ -532,20 +533,35 @@ export default function PredictorPage() {
         <AuthGate>
           <div className="flex-1 flex h-[calc(100vh-73px)] w-full overflow-hidden relative">
             
-            {/* HOVER EXPANDABLE SIDEBAR */}
+            {/* HOVER EXPANDABLE SIDEBAR & MOBILE BOTTOM SHEET */}
+            {/* Mobile Overlay */}
+            <div 
+              className={`fixed inset-0 z-40 bg-slate-900/60 backdrop-blur-md transition-opacity duration-300 md:hidden ${isMobileFilterOpen ? "opacity-100 visible" : "opacity-0 invisible pointer-events-none"}`}
+              onClick={() => { setIsMobileFilterOpen(false); setIsSidebarExpanded(false); }}
+            />
             <aside 
               onMouseEnter={() => setIsSidebarExpanded(true)}
               onMouseLeave={() => setIsSidebarExpanded(false)}
-              className={`h-full bg-gradient-to-b from-blue-50 to-indigo-50 border-r border-blue-200/60 flex flex-col p-4 shrink-0 shadow-lg overflow-y-auto custom-scrollbar transition-all duration-300 ease-in-out ${isSidebarExpanded ? 'w-80' : 'w-20'}`}
+              className={`flex flex-col p-4 shrink-0 shadow-lg overflow-y-auto custom-scrollbar transition-all duration-300 ease-in-out bg-gradient-to-b from-blue-50 to-indigo-50 border-blue-200/60
+                md:relative md:h-full md:border-r ${isSidebarExpanded ? 'md:w-80' : 'md:w-20'} md:translate-y-0
+                fixed inset-x-0 bottom-0 z-50 w-full h-[85vh] rounded-t-3xl border-t shadow-[0_-10px_40px_rgba(0,0,0,0.2)] md:rounded-none md:shadow-lg ${isMobileFilterOpen ? 'translate-y-0' : 'translate-y-[100%]'}
+              `}
             >
-              <div className={`flex items-center gap-2 mb-6 pb-4 border-b-2 border-dashed border-amber-400 ${isSidebarExpanded ? 'justify-start px-2' : 'justify-center'}`}>
-                {isSidebarExpanded ? <PanelLeftClose className="h-5 w-5 text-blue-700 font-bold" /> : <PanelLeft className="h-6 w-6 text-blue-700" />}
+              <div className={`flex items-center gap-2 mb-6 pb-4 border-b-2 border-dashed border-amber-400 ${isSidebarExpanded ? 'justify-between md:justify-start px-2' : 'justify-center'}`}>
+                <div className="flex items-center gap-2">
+                  {isSidebarExpanded ? <PanelLeftClose className="h-5 w-5 text-blue-700 font-bold hidden md:block" /> : <PanelLeft className="h-6 w-6 text-blue-700 hidden md:block" />}
+                  {isSidebarExpanded && (
+                    <span className="text-xs font-black text-blue-900 uppercase tracking-wider animate-fadeIn handwritten">⚙️ Filters</span>
+                  )}
+                </div>
                 {isSidebarExpanded && (
-                  <span className="text-xs font-black text-blue-900 uppercase tracking-wider animate-fadeIn handwritten">⚙️ Filters</span>
+                  <button onClick={() => { setIsMobileFilterOpen(false); setIsSidebarExpanded(false); }} className="md:hidden p-1 bg-blue-100 rounded text-blue-800">
+                    <X className="h-4 w-4" />
+                  </button>
                 )}
               </div>
  
-              <form onSubmit={handlePredictSubmit} className="space-y-5 flex-1 flex flex-col items-center">
+              <form onSubmit={(e) => { handlePredictSubmit(e); setIsMobileFilterOpen(false); setIsSidebarExpanded(false); }} className="space-y-5 flex-1 flex flex-col items-center">
                 
                 {/* 1. Percentile Field */}
                 <div className="w-full flex flex-col items-center">
@@ -629,8 +645,11 @@ export default function PredictorPage() {
             {/* RESULTS RIGHT PANEL */}
             <main ref={rightPanelRef} className="flex-1 h-full flex flex-col bg-gradient-to-b from-slate-50 to-blue-50 min-w-0 overflow-y-auto custom-scrollbar relative">
               {/* ✅ UPDATED: Dynamic search bar with local/server synchronization */}
-              <header className="sticky top-0 z-20 px-8 py-4 border-b-2 border-dashed border-blue-300 bg-gradient-to-r from-blue-50/95 to-indigo-50/95 backdrop-blur-md flex justify-between items-center gap-4 shrink-0 relative">
-                <div className="flex items-center gap-4 w-full max-w-md">
+              <header className="sticky top-0 z-20 px-4 sm:px-8 py-4 border-b-2 border-dashed border-blue-300 bg-gradient-to-r from-blue-50/95 to-indigo-50/95 backdrop-blur-md flex flex-col sm:flex-row justify-between sm:items-center gap-4 shrink-0 relative">
+                <div className="flex items-center gap-2 w-full max-w-md">
+                  <button onClick={() => { setIsMobileFilterOpen(true); setIsSidebarExpanded(true); }} type="button" className="sm:hidden flex shrink-0 items-center justify-center h-10 w-10 bg-white border-2 border-blue-300 rounded-lg text-blue-700 shadow-sm">
+                    <SlidersHorizontal className="h-5 w-5" />
+                  </button>
                   <div className="relative w-full">
                     <span className="absolute left-3 top-2.5 text-lg">🔎</span>
                     <input

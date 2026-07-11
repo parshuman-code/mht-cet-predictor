@@ -269,7 +269,7 @@ export default function MyListPage() {
         description="Your saved colleges stay linked to your account. Sign in or create a free account to open your preference diary."
       >
         <div className="px-4 pb-10 pt-[97px]">
-          <main className="relative mx-auto max-w-6xl overflow-visible rounded-lg border border-slate-300 bg-white/95 pl-8 shadow-2xl shadow-slate-900/10 md:pl-14">
+          <main className="relative mx-auto max-w-6xl overflow-visible rounded-lg border border-slate-300 bg-white/95 pl-4 md:pl-14 shadow-2xl shadow-slate-900/10">
         <div className="pointer-events-none absolute inset-y-0 left-0 hidden w-14 border-r border-blue-100 bg-blue-50/60 md:block">
           {Array.from({ length: 14 }).map((_, index) => (
             <div
@@ -338,7 +338,7 @@ export default function MyListPage() {
           ) : (
             <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
               <SortableContext items={bookmarkIds} strategy={verticalListSortingStrategy}>
-                <div className="max-h-[calc(100vh-320px)] overflow-y-auto rounded-lg border border-blue-200 bg-white/70">
+                <div className="max-h-[calc(100vh-320px)] min-h-[300px] overflow-y-auto rounded-lg border border-blue-200 bg-white/70">
                   {bookmarks.map((bookmark, index) => (
                     <SortableBookmarkRow
                       key={bookmark.id}
